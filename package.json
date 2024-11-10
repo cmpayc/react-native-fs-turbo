@@ -1,0 +1,110 @@
+{
+  "name": "react-native-fs-turbo",
+  "version": "0.1.0",
+  "description": "React-Native library for working with Android/iOS file system, written using JSI and C++ TurboModules",
+  "main": "lib/commonjs/index",
+  "module": "lib/module/index",
+  "types": "lib/typescript/index.d.ts",
+  "react-native": "src/index",
+  "source": "src/index",
+  "license": "MIT",
+  "scripts": {
+    "typescript": "tsc --noEmit",
+    "lint": "eslint \"**/*.{js,ts,tsx}\"",
+    "build": "bob build",
+    "release": "bob build && release-it"
+  },
+  "files": [
+    "cpp/**/*.h",
+    "cpp/**/*.cpp",
+    "lib/commonjs",
+    "lib/module",
+    "lib/typescript",
+    "ios/**/*.h",
+    "ios/**/*.m",
+    "ios/**/*.mm",
+    "ios/**/*.cpp",
+    "src",
+    "RNFSTurbo.podspec"
+  ],
+  "keywords": [
+    "react",
+    "native",
+    "fs",
+    "filesystem",
+    "javascript",
+    "typescript",
+    "android",
+    "ios",
+    "library",
+    "jsi",
+    "turbo",
+    "turbomodule",
+    "download",
+    "upload",
+    "file-transfer"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmpayc/react-native-fs-turbo.git"
+  },
+  "author": "Sergei Kazakov <kazakov.s.fl@gmail.com> (https://github.com/cmpayc)",
+  "bugs": {
+    "url": "https://github.com/cmpayc/react-native-fs-turbo/issues"
+  },
+  "homepage": "https://github.com/cmpayc/react-native-fs-turbo#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "codegenConfig": {
+    "name": "RNFSTurboSpec",
+    "type": "modules",
+    "jsSrcsDir": "src"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^7.32.0 || ^8.2.0",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-prettier": "^5.2.1",
+    "prettier": "^3.3.3",
+    "react": "^18.3.1",
+    "react-native": "^0.74.2",
+    "react-native-builder-bob": "^0.30.2",
+    "release-it": "^17.10.0",
+    "typescript": "^5.1.6"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      "commonjs",
+      "module",
+      [
+        "typescript",
+        {
+          "project": "tsconfig.json"
+        }
+      ]
+    ]
+  },
+  "release-it": {
+    "git": {
+      "commitMessage": "chore: release ${version}",
+      "tagName": "v${version}"
+    },
+    "npm": {
+      "publish": true
+    },
+    "github": {
+      "release": true
+    }
+  },
+  "packageManager": "yarn@1.22.19"
+}
