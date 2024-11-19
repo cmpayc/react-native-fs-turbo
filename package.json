@@ -15,6 +15,10 @@
     "release": "bob build && release-it"
   },
   "files": [
+    "android/src",
+    "android/build.gradle",
+    "android/CMakeLists.txt",
+    "android/gradle.properties",
     "cpp/**/*.h",
     "cpp/**/*.cpp",
     "lib/commonjs",
@@ -25,6 +29,7 @@
     "ios/**/*.mm",
     "ios/**/*.cpp",
     "src",
+    "react-native.config.js",
     "RNFSTurbo.podspec"
   ],
   "keywords": [
