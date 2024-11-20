@@ -10,7 +10,7 @@ export const createRNFSTurbo = (): {
 } => {
   const { configuration, module } = getRNFSTurboModule();
 
-  const instance = module.createRNFSTurbo(configuration) as RNFSTurboInterface;
+  const instance = module.createRNFSTurbo() as RNFSTurboInterface;
   if (__DEV__) {
     if (typeof instance !== "object" || instance == null) {
       throw new Error(
