@@ -30,7 +30,7 @@ export interface Spec extends TurboModule {
    * Create a new instance of RNFSTurbo.
    * The returned {@linkcode UnsafeObject} is a `jsi::HostObject`.
    */
-  readonly createRNFSTurbo: (configuration: Configuration) => UnsafeObject;
+  readonly createRNFSTurbo: () => UnsafeObject;
 }
 
 let module: Spec | null;

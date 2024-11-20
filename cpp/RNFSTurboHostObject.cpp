@@ -11,7 +11,7 @@
 using namespace facebook;
 namespace fs = std::filesystem;
  
-RNFSTurboHostObject::RNFSTurboHostObject(const facebook::react::RNFSTurboConfig& config) {
+RNFSTurboHostObject::RNFSTurboHostObject() {
   RNFSTurboLogger::log("RNFSTurbo", "Initializing RNFSTurbo");
 #ifdef __ANDROID__
   JNIEnv *env = facebook::jni::Environment::current();

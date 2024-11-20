@@ -36,7 +36,7 @@ using namespace facebook;
 
 class RNFSTurboHostObject : public jsi::HostObject {
 public:
-  RNFSTurboHostObject(const facebook::react::RNFSTurboConfig& config);
+  RNFSTurboHostObject();
   ~RNFSTurboHostObject();
 
 public:

@@ -19,29 +19,13 @@
 
 namespace facebook::react {
 
-// The RNFSTurboConfiguration type from JS
-using RNFSTurboConfig = RNFSTurboModuleConfiguration<
-  std::string,
-  std::string,
-  std::string,
-  std::string,
-  std::string,
-  std::string,
-  std::string,
-  std::string,
-  std::string,
-  std::string,
-  std::string
->;
-template <> struct Bridging<RNFSTurboConfig> : RNFSTurboModuleConfigurationBridging<RNFSTurboConfig> {};
-
 // The TurboModule itself
 class NativeRNFSTurboModule : public NativeRNFSTurboModuleCxxSpec<NativeRNFSTurboModule> {
 public:
   NativeRNFSTurboModule(std::shared_ptr<CallInvoker> jsInvoker);
   ~NativeRNFSTurboModule();
 
-  jsi::Object createRNFSTurbo(jsi::Runtime& runtime, RNFSTurboConfig config);
+  jsi::Object createRNFSTurbo(jsi::Runtime& runtime);
 };
 
 } // namespace facebook::react

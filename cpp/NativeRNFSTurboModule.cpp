@@ -15,8 +15,8 @@ NativeRNFSTurboModule::NativeRNFSTurboModule(std::shared_ptr<CallInvoker> jsInvo
 
 NativeRNFSTurboModule::~NativeRNFSTurboModule() {}
 
-jsi::Object NativeRNFSTurboModule::createRNFSTurbo(jsi::Runtime& runtime, RNFSTurboConfig config) {
-  auto instance = std::make_shared<RNFSTurboHostObject>(config);
+jsi::Object NativeRNFSTurboModule::createRNFSTurbo(jsi::Runtime& runtime) {
+  auto instance = std::make_shared<RNFSTurboHostObject>();
   return jsi::Object::createFromHostObject(runtime, instance);
 }
 
