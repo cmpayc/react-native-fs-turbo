@@ -29,9 +29,19 @@ private:
 public:
   static void log(const std::string& tag, const std::string& message);
 
+  static std::string sprintf(const std::string& message) {
+    return message;
+  }
+
   template <typename... Args>
   inline static void log(const std::string& tag, const std::string& formatString, Args&&... args) {
     std::string formattedString = string_format(formatString, std::forward<Args>(args)...);
     log(tag, formattedString);
+  }
+
+  template <typename... Args>
+  inline static std::string sprintf(const std::string& formatString, Args&&... args) {
+    std::string formattedString = string_format(formatString, std::forward<Args>(args)...);
+    return sprintf(formattedString);
   }
 };
