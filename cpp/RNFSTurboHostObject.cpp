@@ -49,7 +49,8 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "Too many arguments");
         }
 
-        std::string filePath = arguments[0].asString(runtime).utf8(runtime);
+        std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
+
         bool isNewFormat{false};
         if (count > 1 && arguments[1].isBool()) {
           isNewFormat = arguments[1].asBool();
@@ -115,7 +116,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         }
         bool isAndroidAssets = propName == "readDirAssets";
 
-        std::string dirPath = arguments[0].asString(runtime).utf8(runtime);
+        std::string dirPath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         bool isNewFormat{false};
         if (count > 1 && arguments[1].isBool()) {
           isNewFormat = arguments[1].asBool();
@@ -279,7 +280,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "Too many arguments");
         }
 
-        std::string filePath = arguments[0].asString(runtime).utf8(runtime);
+        std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         long length{0};
         if (propName == "read" && count > 1 && arguments[1].isNumber()) {
           length = arguments[1].asNumber();
@@ -380,7 +381,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "Negative position");
         }
 
-        std::string filePath = arguments[0].asString(runtime).utf8(runtime);
+        std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
 
         std::string content{""};
         uint8_t *contentArr = nullptr;
@@ -471,8 +472,8 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "Second argument ('destPath') has to be of type string!");
         }
 
-        std::string filePath = arguments[0].asString(runtime).utf8(runtime);
-        std::string destPath = arguments[1].asString(runtime).utf8(runtime);
+        std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
+        std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
 
         try {
           fs::rename(filePath.c_str(), destPath.c_str());
@@ -496,8 +497,8 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "Second argument ('destPath') has to be of type string!");
         }
 
-        std::string srcFolderPath = arguments[0].asString(runtime).utf8(runtime);
-        std::string destFolderPath = arguments[1].asString(runtime).utf8(runtime);
+        std::string srcFolderPath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
+        std::string destFolderPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
 
         struct stat t_stat;
         int res = stat(srcFolderPath.c_str(), &t_stat);
@@ -537,8 +538,8 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "Second argument ('destPath') has to be of type string!");
         }
 
-        std::string filePath = arguments[0].asString(runtime).utf8(runtime);
-        std::string destPath = arguments[1].asString(runtime).utf8(runtime);
+        std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
+        std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
 
         try {
           if (propName == "copyFileAssets" || propName == "copyFileRes") {
@@ -576,8 +577,8 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         if (count < 4 || !arguments[3].isNumber()) [[unlikely]] {
           throw jsi::JSError(runtime, "Third argument ('height') has to be of type number!");
         }
-        std::string imageUri = arguments[0].asString(runtime).utf8(runtime);
-        std::string destPath = arguments[1].asString(runtime).utf8(runtime);
+        std::string imageUri = cleanPath(arguments[0].asString(runtime).utf8(runtime));
+        std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
         int width = arguments[2].asNumber();
         int height = arguments[2].asNumber();
         float scale{1.0};
@@ -628,8 +629,8 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         if (count < 2 || !arguments[1].isString()) [[unlikely]] {
           throw jsi::JSError(runtime, "Second argument ('destPath') has to be of type string!");
         }
-        std::string videoUri = arguments[0].asString(runtime).utf8(runtime);
-        std::string destPath = arguments[1].asString(runtime).utf8(runtime);
+        std::string videoUri = cleanPath(arguments[0].asString(runtime).utf8(runtime));
+        std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
         if (videoUri.rfind("ph://", 0) == std::string::npos) {
           try {
             fs::copy(videoUri.c_str(), destPath.c_str());
@@ -662,7 +663,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
         }
         
-        std::string filePath = arguments[0].asString(runtime).utf8(runtime);
+        std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
 
         try {
           fs::remove_all(filePath.c_str());
@@ -690,7 +691,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
         }
         
-        std::string filePath = arguments[0].asString(runtime).utf8(runtime);
+        std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
 
         bool exists{false};
         if (propName == "existsAssets" || propName == "existsRes") {
@@ -718,7 +719,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "Second argument ('algorithm') has to be of type string!");
         }
 
-        std::string filePath = arguments[0].asString(runtime).utf8(runtime);
+        std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         std::string algorithm = arguments[1].asString(runtime).utf8(runtime);
 
         try {
@@ -761,7 +762,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "Too many arguments");
         }
 
-        std::string filePath = arguments[0].asString(runtime).utf8(runtime);
+        std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         long int mtime{0};
         bool isMTime{false};
         if (count > 1 && arguments[1].isNumber()) {
@@ -805,7 +806,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
         }
 
-        std::string filePath = arguments[0].asString(runtime).utf8(runtime);
+        std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         bool isExcludedFromBackupKey{false};
         if (count == 2 && arguments[1].isObject()) {
             jsi::Value propIsExcludedFromBackupKey = arguments[1].asObject(runtime).getProperty(runtime, "NSURLIsExcludedFromBackupKey");
@@ -882,7 +883,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         }
         jsi::Value optionToFile = options.getProperty(runtime, "toFile");
         if (optionToFile.isString()) {
-          toFile = optionToFile.asString(runtime).utf8(runtime);
+          toFile = cleanPath(optionToFile.asString(runtime).utf8(runtime));
           if (toFile.size() == 0) {
             throw jsi::JSError(runtime, "toFile option is mandatory");
           }
@@ -1197,7 +1198,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           files[i] = {
             tmpName.asString(runtime).utf8(runtime),
             tmpFilename.asString(runtime).utf8(runtime),
-            tmpFilepath.asString(runtime).utf8(runtime),
+            cleanPath(tmpFilepath.asString(runtime).utf8(runtime)),
             tmpFiletype.asString(runtime).utf8(runtime),
           };
         }
@@ -1367,7 +1368,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, "Too many arguments");
         }
 
-        std::string path = arguments[0].asString(runtime).utf8(runtime);
+        std::string path = cleanPath(arguments[0].asString(runtime).utf8(runtime));
 
         std::shared_ptr<jsi::Function> scanFunc = std::make_shared<jsi::Function>(
           arguments[1].asObject(runtime).asFunction(runtime)
