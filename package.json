@@ -28,6 +28,7 @@
     "ios/**/*.m",
     "ios/**/*.mm",
     "ios/**/*.cpp",
+    "ios/PrivacyInfo.xcprivacy",
     "src",
     "react-native.config.js",
     "RNFSTurbo.podspec"
