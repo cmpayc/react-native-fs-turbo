@@ -191,7 +191,7 @@ class RNFSTurbo implements RNFSTurboInterface {
   }
 
   copyFolder(srcFolderPath: string, destFolderPath: string): void {
-    const func = this.getFunctionFromCache("moveFile");
+    const func = this.getFunctionFromCache("copyFolder");
     return func(srcFolderPath, destFolderPath);
   }
 
