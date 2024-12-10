@@ -9,8 +9,8 @@
 
 std::string readFile(const char* filePath, int offset, int length) {
   std::ifstream inputFile(filePath, std::ios::binary);
-  if (!inputFile.is_open() || !inputFile.good()) {
-    throw "Can not open file";
+  if (!inputFile.is_open()) {
+    throw strerror(errno);
   }
   inputFile.seekg(0, std::ios::end);
   size_t size = inputFile.tellg();
@@ -36,8 +36,8 @@ std::string readFile(const char* filePath, int offset, int length) {
 
 std::vector<unsigned char> readFileUint8(const char* filePath, int offset, int length) {
   std::ifstream inputFile(filePath, std::ios::binary);
-  if (!inputFile.is_open() || !inputFile.good()) {
-    throw "Can not open file";
+  if (!inputFile.is_open()) {
+    throw strerror(errno);
   }
   if (offset > 0 || length > 0) {
     std::vector<uint8_t> vBuffer;
@@ -71,8 +71,8 @@ std::vector<unsigned char> readFileUint8(const char* filePath, int offset, int l
 
 void writeFile(const char* filePath, const char* content, bool isAppend) {
   std::ofstream outputFile(filePath, isAppend ? std::ios::ate|std::ios::app : std::ios::binary);
-  if (!outputFile.is_open() || !outputFile.good()) {
-    throw "Can not open file";
+  if (!outputFile.is_open()) {
+    throw strerror(errno);
   }
 
   outputFile << content;
@@ -82,8 +82,8 @@ void writeFile(const char* filePath, const char* content, bool isAppend) {
 
 void writeFileUint8(const char* filePath, const uint8_t *contentUint8, size_t length, bool isAppend) {
   std::ofstream outputFile(filePath, isAppend ? std::ios::ate|std::ios::app|std::ios::binary : std::ios::binary);
-  if (!outputFile.is_open() || !outputFile.good()) {
-    throw "Can not open file";
+  if (!outputFile.is_open()) {
+    throw strerror(errno);;
   }
 
   outputFile.write((char*)contentUint8, length);
@@ -98,8 +98,8 @@ void writeWithOffset(const char* filePath, std::string content, int offset) {
     throw "Offset is greater then file size";
   }
   std::ofstream outputFile(filePath, std::ios::trunc | std::ios::binary);
-  if (!outputFile.is_open() || !outputFile.good()) {
-    throw "Can not open file";
+  if (!outputFile.is_open()) {
+    throw strerror(errno);
   }
   
   fileData.replace(offset, content.size(), content);

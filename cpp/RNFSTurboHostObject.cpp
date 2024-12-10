@@ -43,10 +43,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count < 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "stat", "First argument ('filepath') has to be of type string"));
         }
         if (count > 2) [[unlikely]] {
-          throw jsi::JSError(runtime, "Too many arguments");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "stat", "Too many arguments"));
         }
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
@@ -59,7 +59,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         struct stat t_stat;
         int res = stat(filePath.c_str(), &t_stat);
         if (res < 0) {
-            throw jsi::JSError(runtime, "File not exists");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), "stat", strerror(errno)));
         }
 
         jsi::Object obj = jsi::Object(runtime);
@@ -105,14 +105,14 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       [this, propName](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifndef __ANDROID__
         if (propName == "readDirAssets") {
-          throw jsi::JSError(runtime, "readDirAssets command only for Android");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "readDirAssets", "Command only for Android"));
         }
 #endif
         if (count < 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "First argument ('filepath') has to be of type string"));
         }
         if (count > 2) [[unlikely]] {
-          throw jsi::JSError(runtime, "Too many arguments");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Too many arguments"));
         }
         bool isAndroidAssets = propName == "readDirAssets";
 
@@ -134,13 +134,13 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             assetsDirItems = platformHelper->readDirAssets(dirPath.c_str());
             len = assetsDirItems.size();
           } catch (const char *error_message) {
-            throw jsi::JSError(runtime, error_message);
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", dirPath.c_str(), propName.c_str(), error_message));
           }
 #endif
         } else {
           dir = opendir(dirPath.c_str());
-          if (!dir){
-            throw jsi::JSError(runtime, "Dir not exists or access denied");
+          if (dir == NULL){
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", dirPath.c_str(), propName.c_str(), strerror(errno)));
           }
           
           while ((dent = readdir(dir)) != NULL){
@@ -265,19 +265,15 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this, propName](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifndef __ANDROID__
-        if (propName == "readFileAssets") {
-          throw jsi::JSError(runtime, "readFileAssets command only for Android");
-        } else if (propName == "readFileRes") {
-          throw jsi::JSError(runtime, "readFileRes command only for Android");
+        if (propName == "readFileAssets" || propName == "readFileRes") {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Command only for Android"));
         }
 #endif
         if (count < 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "First argument ('filepath') has to be of type string"));
         }
-        if (propName == "read" && count > 4) [[unlikely]] {
-          throw jsi::JSError(runtime, "Too many arguments");
-        }if (propName != "read" && count > 2) [[unlikely]] {
-          throw jsi::JSError(runtime, "Too many arguments");
+        if ((propName == "read" && count > 4) || (propName != "read" && count > 2)) [[unlikely]] {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Too many arguments"));
         }
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
@@ -296,7 +292,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           encoding = arguments[1].asString(runtime).utf8(runtime);
         }
         if (encoding != "utf8" && encoding != "base64" && encoding != "uint8" && encoding != "ascii") {
-          throw jsi::JSError(runtime, "Wrong encoding!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", propName.c_str(), "Wrong encoding", encoding.c_str()));
         }
 
         try {
@@ -338,9 +334,9 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             }
           }
         } catch (const char *error_message) {
-          throw jsi::JSError(runtime, error_message);
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), propName.c_str(), error_message));
         } catch (std::exception const& e) {
-          throw jsi::JSError(runtime, e.what());
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), propName.c_str(), e.what()));
         }
         return jsi::Value::undefined();
       }
@@ -352,7 +348,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this, propName](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count < 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "First argument ('filepath') has to be of type string"));
         }
         std::string encoding{"utf8"};
         if (propName == "write" && count == 4 && arguments[3].isString()) {
@@ -361,24 +357,22 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           encoding = arguments[2].asString(runtime).utf8(runtime);
         }
         if (encoding != "utf8" && encoding != "base64" && encoding != "uint8" && encoding != "ascii") {
-          throw jsi::JSError(runtime, "Wrong encoding!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", propName.c_str(), "Wrong encoding", encoding.c_str()));
         }
         if (encoding == "uint8" && (count < 2 || !arguments[1].isObject())) [[unlikely]] {
-          throw jsi::JSError(runtime, "Second argument ('content') has to be of type number[]!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('content') has to be of type number[]"));
         } else if (encoding != "uint8" && (count < 2 || !arguments[1].isString())) [[unlikely]] {
-          throw jsi::JSError(runtime, "Second argument ('content') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('content') has to be of type string"));
         }
-        if (propName == "write" && count > 4) [[unlikely]] {
-          throw jsi::JSError(runtime, "Too many arguments");
-        } else if (propName != "write" && count > 3) [[unlikely]] {
-          throw jsi::JSError(runtime, "Too many arguments");
+        if ((propName == "write" && count > 4) || (propName != "write" && count > 3)) [[unlikely]] {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Too many arguments"));
         }
         int offset{-1};
         if (propName == "write" && count > 2 && arguments[2].isNumber()) {
           offset = arguments[2].asNumber();
         }
         if (offset < -1) {
-          throw jsi::JSError(runtime, "Negative position");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Negative offset"));
         }
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
@@ -389,16 +383,15 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         if (encoding == "uint8" || encoding == "ascii") {
           jsi::Array jsiObj = arguments[1].asObject(runtime).asArray(runtime);
           if (!jsiObj.isArray(runtime)) {
-            throw jsi::JSError(runtime, "Second argument ('content') has to be of type number[]!");
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('content') has to be of type number[]"));
           }
           jsi::Array jsiArr = arguments[1].asObject(runtime).asArray(runtime);
           contentArr = new uint8_t[jsiArr.size(runtime)];
           contentLength = jsiArr.size(runtime) * sizeof(uint8_t);
           for (int i = 0; i < jsiArr.size(runtime); i++) {
             if (!jsiArr.getValueAtIndex(runtime, i).isNumber()) {
-              throw jsi::JSError(runtime, "Second argument ('content') has to be of type number[]!");
+              throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('content') has to be of type number[]"));
             }
-            int chr = jsiArr.getValueAtIndex(runtime, i).asNumber();
             contentArr[i] = (int) jsiArr.getValueAtIndex(runtime, i).asNumber();
           }
         } else {
@@ -451,9 +444,9 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             }
           }
         } catch (const char *error_message) {
-          throw jsi::JSError(runtime, error_message);
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), propName.c_str(), error_message));
         } catch (std::exception const& e) {
-          throw jsi::JSError(runtime, e.what());
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), propName.c_str(), e.what()));
         }
 
         return jsi::Value::undefined();
@@ -466,10 +459,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count < 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "moveFile", "First argument ('filepath') has to be of type string"));
         }
         if (count < 2 || !arguments[1].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "Second argument ('destPath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "moveFile", "Second argument ('destPath') has to be of type string"));
         }
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
@@ -478,7 +471,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         try {
           fs::rename(filePath.c_str(), destPath.c_str());
         } catch (fs::filesystem_error& e) {
-          throw jsi::JSError(runtime, e.what());
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "moveFile", e.what()));
         }
 
         return jsi::Value::undefined();
@@ -491,10 +484,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count < 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyFolder", "First argument ('filepath') has to be of type string"));
         }
         if (count < 2 || !arguments[1].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "Second argument ('destPath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyFolder", "Second argument ('destPath') has to be of type string"));
         }
 
         std::string srcFolderPath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
@@ -503,16 +496,16 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         struct stat t_stat;
         int res = stat(srcFolderPath.c_str(), &t_stat);
         if (res < 0) {
-          throw jsi::JSError(runtime, "Dir not exists");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", srcFolderPath.c_str(), "copyFolder", strerror(errno)));
         }
         if (!(t_stat.st_mode & S_IFDIR)) {
-          throw jsi::JSError(runtime, "Not a directory");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", srcFolderPath.c_str(), "copyFolder", "Not a directory"));
         }
 
         try {
           fs::copy(srcFolderPath, destFolderPath, fs::copy_options::overwrite_existing | fs::copy_options::recursive);
         } catch (fs::filesystem_error& e) {
-          throw jsi::JSError(runtime, e.what());
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyFolder", e.what()));
         }
 
         return jsi::Value::undefined();
@@ -525,17 +518,15 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this, propName](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifndef __ANDROID__
-        if (propName == "copyFileAssets") {
-          throw jsi::JSError(runtime, "copyFileAssets command only for Android");
-        } else if (propName == "copyFileRes") {
-          throw jsi::JSError(runtime, "copyFileRes command only for Android");
+        if (propName == "copyFileAssets" || propName == "copyFileRes") {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Command only for Android"));
         }
 #endif
         if (count < 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "First argument ('filepath') has to be of type string"));
         }
         if (count < 2 || !arguments[1].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "Second argument ('destPath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('destPath') has to be of type string"));
         }
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
@@ -550,9 +541,9 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             fs::copy(filePath.c_str(), destPath.c_str());
           }
         } catch (fs::filesystem_error& e) {
-          throw jsi::JSError(runtime, e.what());
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), e.what()));
         } catch (const char* error_message) {
-          throw jsi::JSError(runtime, error_message);
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), propName.c_str(), error_message));
         }
 
         return jsi::Value::undefined();
@@ -566,19 +557,21 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifdef __APPLE__
         if (count < 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('imageUri') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsFileIOS", "First argument ('imageUri') has to be of type string"));
         }
         if (count < 2 || !arguments[1].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "Second argument ('destPath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsFileIOS", "Second argument ('destPath') has to be of type string"));
         }
         if (count < 3 || !arguments[2].isNumber()) [[unlikely]] {
-          throw jsi::JSError(runtime, "Third argument ('width') has to be of type number!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsFileIOS", "Third argument ('width') has to be of type number"));
         }
         if (count < 4 || !arguments[3].isNumber()) [[unlikely]] {
-          throw jsi::JSError(runtime, "Third argument ('height') has to be of type number!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsFileIOS", "Fourth argument ('height') has to be of type number"));
         }
+
         std::string imageUri = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
+
         int width = arguments[2].asNumber();
         int height = arguments[2].asNumber();
         float scale{1.0};
@@ -598,7 +591,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           try {
             fs::copy(imageUri.c_str(), destPath.c_str());
           } catch (fs::filesystem_error& e) {
-            throw jsi::JSError(runtime, e.what());
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsFileIOS", e.what()));
           }
           return jsi::String::createFromUtf8(runtime, destPath);
         }
@@ -606,12 +599,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         try {
           platformHelper->copyAssetsFileIOS(imageUri.c_str(), destPath.c_str(), width, height, scale, compression, resizeMode.c_str());
         } catch (const char* error_message) {
-          throw jsi::JSError(runtime, error_message);
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", imageUri.c_str(), "copyAssetsFileIOS", error_message));
         }
         
         return jsi::String::createFromUtf8(runtime, destPath);
 #else
-        throw jsi::JSError(runtime, "copyAssetsFileIOS command only for iOS");
+        throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsFileIOS", "Command only for iOS"));
 #endif
         return jsi::Value::undefined();
       }
@@ -624,18 +617,20 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifdef __APPLE__
         if (count < 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('videoUri') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsVideoIOS", "First argument ('videoUri') has to be of type string"));
         }
         if (count < 2 || !arguments[1].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "Second argument ('destPath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsVideoIOS", "Second argument ('destPath') has to be of type string"));
         }
+
         std::string videoUri = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
+
         if (videoUri.rfind("ph://", 0) == std::string::npos) {
           try {
             fs::copy(videoUri.c_str(), destPath.c_str());
           } catch (fs::filesystem_error& e) {
-            throw jsi::JSError(runtime, e.what());
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsVideoIOS", e.what()));
           }
           return jsi::String::createFromUtf8(runtime, destPath);
         }
@@ -643,12 +638,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         try {
           platformHelper->copyAssetsVideoIOS(videoUri.c_str(), destPath.c_str());
         } catch (const char* error_message) {
-          throw jsi::JSError(runtime, error_message);
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", videoUri.c_str(), "copyAssetsVideoIOS", error_message));
         }
 
         return jsi::String::createFromUtf8(runtime, destPath);
 #else
-        throw jsi::JSError(runtime, "copyAssetsVideoIOS command only for iOS");
+        throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsVideoIOS", "Command only for iOS"));
 #endif
         return jsi::Value::undefined();
       }
@@ -660,7 +655,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count != 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "unlink", "First argument ('filepath') has to be of type string"));
         }
         
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
@@ -668,7 +663,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         try {
           fs::remove_all(filePath.c_str());
         } catch (fs::filesystem_error& e) {
-          throw jsi::JSError(runtime, e.what());
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "unlink", e.what()));
         }
         
         return jsi::Value::undefined();
@@ -681,14 +676,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this, propName](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifndef __ANDROID__
-        if (propName == "existsAssets") {
-          throw jsi::JSError(runtime, "existsAssets command only for Android");
-        } else if (propName == "existsRes") {
-          throw jsi::JSError(runtime, "existsRes command only for Android");
+        if (propName == "existsAssets" || propName == "existsRes") {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Command only for Android"));
         }
 #endif
         if (count != 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "First argument ('filepath') has to be of type string"));
         }
         
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
@@ -713,10 +706,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count < 2 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "hash", "First argument ('filepath') has to be of type string"));
         }
         if (count < 2 || !arguments[1].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "Second argument ('algorithm') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "hash", "Second argument ('algorithm') has to be of type string"));
         }
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
@@ -739,7 +732,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           } else if (algorithm == "sha512") {
             res = jsi::String::createFromUtf8(runtime, sha512(buffer));
           } else {
-            throw "Wrong algorithm (only mds, sha1, sha224, sha256, sha384, sha512 allowed)";
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", "hash", "Wrong algorithm", algorithm.c_str()));
           }
 
           return res;
@@ -756,13 +749,14 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count < 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "touch", "First argument ('filepath') has to be of type string"));
         }
         if (count > 3) [[unlikely]] {
-          throw jsi::JSError(runtime, "Too many arguments");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "touch", "Too many arguments"));
         }
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
+
         long int mtime{0};
         bool isMTime{false};
         if (count > 1 && arguments[1].isNumber()) {
@@ -779,7 +773,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         struct stat t_stat;
         int res = stat(filePath.c_str(), &t_stat);
         if (res < 0) {
-            throw jsi::JSError(runtime, "File not exists");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), "touch", strerror(errno)));
         }
 
         if (isMTime) {
@@ -803,10 +797,11 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if ((count != 1 && count != 2) || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('filepath') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "mkdir", "First argument ('filepath') has to be of type string"));
         }
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
+
         bool isExcludedFromBackupKey{false};
         if (count == 2 && arguments[1].isObject()) {
             jsi::Value propIsExcludedFromBackupKey = arguments[1].asObject(runtime).getProperty(runtime, "NSURLIsExcludedFromBackupKey");
@@ -826,12 +821,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             BOOL success = [url setResourceValue:[NSNumber numberWithBool:YES] forKey:NSURLIsExcludedFromBackupKey error:nil];
 
             if (!success) {
-              throw jsi::JSError(runtime, "Can not set NSURLIsExcludedFromBackupKey");
+              throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), "mkdir", "Can not set NSURLIsExcludedFromBackupKey"));
             }
 #endif
           }
         } catch (fs::filesystem_error& e) {
-          throw jsi::JSError(runtime, e.what());
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "mkdir", e.what()));
         }
 
         return jsi::Value::undefined();
@@ -844,17 +839,17 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count < 3 || !arguments[0].isObject()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('options') has to be of type object!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", "First argument ('options') has to be of type object"));
         }
         if (count > 3) [[unlikely]] {
-          throw jsi::JSError(runtime, "Too many arguments");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", "Too many arguments"));
         }
         jsi::Object options = arguments[0].asObject(runtime);
         if (!options.hasProperty(runtime, "fromUrl")) {
-          throw jsi::JSError(runtime, "fromUrl option is mandatory");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", "fromUrl option is mandatory"));
         }
         if (!options.hasProperty(runtime, "toFile")) {
-          throw jsi::JSError(runtime, "toFile option is mandatory");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", "toFile option is mandatory"));
         }
         std::shared_ptr<jsi::Function> completeFunc = std::make_shared<jsi::Function>(arguments[1].asObject(runtime).asFunction(runtime));
         std::shared_ptr<jsi::Function> errorFunc = std::make_shared<jsi::Function>(arguments[2].asObject(runtime).asFunction(runtime));
@@ -876,19 +871,19 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         if (optionFromUrl.isString()) {
           fromUrl = optionFromUrl.asString(runtime).utf8(runtime);
           if (fromUrl.size() == 0) {
-            throw jsi::JSError(runtime, "fromUrl option is mandatory");
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", "fromUrl option is mandatory"));
           }
         } else {
-          throw jsi::JSError(runtime, "fromUrl option is string");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", "fromUrl option should be a string"));
         }
         jsi::Value optionToFile = options.getProperty(runtime, "toFile");
         if (optionToFile.isString()) {
           toFile = cleanPath(optionToFile.asString(runtime).utf8(runtime));
           if (toFile.size() == 0) {
-            throw jsi::JSError(runtime, "toFile option is mandatory");
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", "toFile option is mandatory"));
           }
         } else {
-          throw jsi::JSError(runtime, "toFile option is string");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", "toFile option should be a string"));
         }
         if (options.hasProperty(runtime, "headers")) {
           jsi::Value optionHeaders = options.getProperty(runtime, "headers");
@@ -981,7 +976,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         };
         
         RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc](int jobId, const char* errorMessage) -> void {
-          errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, errorMessage));
+          errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", errorMessage)));
         };
         
         std::optional<RNFSTurboBeginDownloadCallback> beginCallback = std::nullopt;
@@ -1050,7 +1045,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count != 1 || !arguments[0].isNumber()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('jobId') has to be of type number!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "stopDownload", "First argument ('jobId') has to be of type number"));
         }
         
         int jobId = arguments[0].asNumber();
@@ -1068,14 +1063,14 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifdef __APPLE__
         if (count != 1 || !arguments[0].isNumber()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('jobId') has to be of type number!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "resumeDownload", "First argument ('jobId') has to be of type number"));
         }
         
         int jobId = arguments[0].asNumber();
 
         platformHelper->resumeDownload(jobId);
 #else
-        throw jsi::JSError(runtime, "resumeDownload command only for iOS");
+        throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "resumeDownload", "Command only for iOS"));
 #endif
         return jsi::Value::undefined();
       }
@@ -1088,7 +1083,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifdef __APPLE__
         if (count != 1 || !arguments[0].isNumber()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('jobId') has to be of type number!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "isResumable", "First argument ('jobId') has to be of type number"));
         }
         
         int jobId = arguments[0].asNumber();
@@ -1096,7 +1091,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         bool isResumable = platformHelper->isResumable(jobId);
         return jsi::Value(isResumable);
 #else
-        throw jsi::JSError(runtime, "isResumable command only for iOS");
+        throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "isResumable", "Command only for iOS"));
 #endif
       }
     );
@@ -1108,14 +1103,14 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifdef __APPLE__
         if (count != 1 || !arguments[0].isNumber()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('jobId') has to be of type number!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "completeHandlerIOS", "First argument ('jobId') has to be of type number"));
         }
         
         int jobId = arguments[0].asNumber();
 
         platformHelper->completeHandlerIOS(jobId);
 #else
-        throw jsi::JSError(runtime, "completeHandlerIOS command only for iOS");
+        throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "completeHandlerIOS", "Command only for iOS"));
 #endif
         return jsi::Value::undefined();
       }
@@ -1127,17 +1122,17 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count < 3 || !arguments[0].isObject()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('options') has to be of type object!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", "First argument ('options') has to be of type object"));
         }
         if (count > 3) [[unlikely]] {
-          throw jsi::JSError(runtime, "Too many arguments");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", "Too many arguments"));
         }
         jsi::Object options = arguments[0].asObject(runtime);
         if (!options.hasProperty(runtime, "toUrl")) {
-          throw jsi::JSError(runtime, "toUrl option is mandatory");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", "toUrl option is mandatory"));
         }
         if (!options.hasProperty(runtime, "files")) {
-          throw jsi::JSError(runtime, "files option is mandatory");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", "files option is mandatory"));
         }
         std::shared_ptr<jsi::Function> completeFunc = std::make_shared<jsi::Function>(arguments[1].asObject(runtime).asFunction(runtime));
         std::shared_ptr<jsi::Function> errorFunc = std::make_shared<jsi::Function>(arguments[2].asObject(runtime).asFunction(runtime));
@@ -1152,10 +1147,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         if (optionToUrl.isString()) {
           toUrl = optionToUrl.asString(runtime).utf8(runtime);
           if (toUrl.size() == 0) {
-            throw jsi::JSError(runtime, "toUrl option is mandatory");
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", "toUrl option is mandatory"));
           }
         } else {
-          throw jsi::JSError(runtime, "toUrl option is string");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", "toUrl option should be a string"));
         }
         if (options.hasProperty(runtime, "binaryStreamOnly")) {
           jsi::Value optionBinaryStreamOnly = options.getProperty(runtime, "binaryStreamOnly");
@@ -1165,12 +1160,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         }
         jsi::Value optionFiles = options.getProperty(runtime, "files");
         if (!optionFiles.isObject()) {
-          throw jsi::JSError(runtime, "files option is object");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", "files option should be an object"));
         }
         jsi::Array tmpFiles = optionFiles.asObject(runtime).asArray(runtime);
         int filesNum = tmpFiles.size(runtime);
         if (filesNum == 0) {
-          throw jsi::JSError(runtime, "files option is mandatory");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", "files option is mandatory"));
         }
         UploadFileItem files[filesNum];
         for (int i = 0; i < filesNum; i++){
@@ -1181,7 +1176,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               !obj.hasProperty(runtime, "filepath") ||
               !obj.hasProperty(runtime, "filetype")
           ) {
-            throw jsi::JSError(runtime, "wrong file data");
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", "Wrong file data"));
           }
           jsi::Value tmpName = obj.getProperty(runtime, "name");
           jsi::Value tmpFilename = obj.getProperty(runtime, "filename");
@@ -1193,7 +1188,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               !tmpFilepath.isString() ||
               !tmpFiletype.isString()
           ) {
-            throw jsi::JSError(runtime, "wrong file data");
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", "Wrong file data"));
           }
           files[i] = {
             tmpName.asString(runtime).utf8(runtime),
@@ -1262,7 +1257,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         };
         
         RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc](int jobId, const char* errorMessage) -> void {
-          errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, errorMessage));
+          errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", errorMessage)));
         };
         
         std::optional<RNFSTurboBeginUploadCallback> beginCallback = std::nullopt;
@@ -1313,7 +1308,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count != 1 || !arguments[0].isNumber()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('jobId') has to be of type number!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "stopUpload", "First argument ('jobId') has to be of type number"));
         }
         
         int jobId = arguments[0].asNumber();
@@ -1330,7 +1325,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
         if (count > 0) [[unlikely]] {
-          throw jsi::JSError(runtime, "The function does not take arguments!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "getFSInfo", "The function does not take arguments"));
         }
         
         try {
@@ -1348,7 +1343,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           
           return result;
         } catch (const char* error_message) {
-          throw jsi::JSError(runtime, error_message);
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "getFSInfo", error_message));
         }
         
         return jsi::Value::undefined();
@@ -1362,10 +1357,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifdef __ANDROID__
         if (count < 2 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('path') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "scanFile", "First argument ('path') has to be of type string"));
         }
         if (count > 2) [[unlikely]] {
-          throw jsi::JSError(runtime, "Too many arguments");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "scanFile", "Too many arguments"));
         }
 
         std::string path = cleanPath(arguments[0].asString(runtime).utf8(runtime));
@@ -1387,10 +1382,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         try {
           platformHelper->scanFile(jobId, path.c_str(), scanCallback);
         } catch (const char* error_message) {
-          throw jsi::JSError(runtime, error_message);
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "scanFile", error_message));
         }
 #else
-        throw jsi::JSError(runtime, "scanFile command only for Android");
+        throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "scanFile", "Command only for Android"));
 #endif
         return jsi::Value::undefined();
       }
@@ -1403,7 +1398,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifdef __ANDROID__
         if (count > 0) [[unlikely]] {
-          throw jsi::JSError(runtime, "The function does not take arguments!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "getAllExternalFilesDirs", "The function does not take arguments"));
         }
 
         try {
@@ -1427,10 +1422,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
 
           return arr;
         } catch (const char* error_message) {
-          throw jsi::JSError(runtime, error_message);
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "getAllExternalFilesDirs", error_message));
         }
 #else
-        throw jsi::JSError(runtime, "getAllExternalFilesDirs command only for Android");
+        throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "getAllExternalFilesDirs", "Command only for Android"));
 #endif
         return jsi::Value::undefined();
       }
@@ -1443,7 +1438,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
 #ifdef __APPLE__
         if (count != 1 || !arguments[0].isString()) [[unlikely]] {
-          throw jsi::JSError(runtime, "First argument ('groupIdentifier') has to be of type string!");
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "pathForGroup", "First argument ('groupIdentifier') has to be of type string"));
         }
         
         std::string groupIdentifier = arguments[0].asString(runtime).utf8(runtime);
@@ -1453,10 +1448,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
 
           return jsi::String::createFromUtf8(runtime, path);
         } catch (const char* error_message) {
-          throw jsi::JSError(runtime, error_message);
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "pathForGroup", error_message));
         }
 #else
-        throw jsi::JSError(runtime, "pathForGroup command only for iOS");
+        throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "pathForGroup", "Command only for iOS"));
 #endif
         return jsi::Value::undefined();
       }
