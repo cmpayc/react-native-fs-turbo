@@ -108,3 +108,11 @@ void writeWithOffset(const char* filePath, std::string content, int offset) {
 
   outputFile.close();
 }
+
+std::string cleanPath(std::string filePath) {
+  return std::regex_replace(
+    filePath,
+    std::regex("^file://"),
+    ""
+  );
+}
