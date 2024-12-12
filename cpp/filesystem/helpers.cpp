@@ -34,7 +34,7 @@ std::string readFile(const char* filePath, int offset, int length) {
   return buffer;
 }
 
-std::vector<unsigned char> readFileUint8(const char* filePath, int offset, int length) {
+std::vector<uint8_t> readFileUint8(const char* filePath, int offset, int length) {
   std::ifstream inputFile(filePath, std::ios::binary);
   if (!inputFile.is_open()) {
     throw strerror(errno);
@@ -69,6 +69,46 @@ std::vector<unsigned char> readFileUint8(const char* filePath, int offset, int l
   return vBuffer;
 }
 
+std::vector<float> readFileFloat32(const char* filePath, int offset, int length) {
+  std::ifstream inputFile(filePath, std::ios::binary);
+  if (!inputFile.is_open()) {
+    throw strerror(errno);
+  }
+  if (offset > 0 || length > 0) {
+    std::vector<float> vBuffer;
+    inputFile.seekg(0, std::ios::end);
+    size_t size = inputFile.tellg();
+    if (length != 0) {
+      if (length > size - offset) {
+        size = size - offset;
+      } else {
+        size = length;
+      }
+    }
+    if (offset > 0) {
+      inputFile.seekg(offset);
+    } else {
+      inputFile.seekg(0);
+    }
+    vBuffer.resize(std::floor(size / sizeof(float)));
+    inputFile.read(reinterpret_cast<char*> (&vBuffer[0]), size);
+
+    inputFile.close();
+    return vBuffer;
+  }
+  
+  std::vector<float> vBuffer;
+  inputFile.seekg(0, std::ios::end);
+  size_t size = inputFile.tellg();
+  inputFile.seekg(0);
+  vBuffer.resize(std::floor(size / sizeof(float)));
+  inputFile.read(reinterpret_cast<char*> (&vBuffer[0]), size);
+
+  inputFile.close();
+
+  return vBuffer;
+}
+
 void writeFile(const char* filePath, const char* content, bool isAppend) {
   std::ofstream outputFile(filePath, isAppend ? std::ios::ate|std::ios::app : std::ios::binary);
   if (!outputFile.is_open()) {
@@ -83,7 +123,7 @@ void writeFile(const char* filePath, const char* content, bool isAppend) {
 void writeFileUint8(const char* filePath, const uint8_t *contentUint8, size_t length, bool isAppend) {
   std::ofstream outputFile(filePath, isAppend ? std::ios::ate|std::ios::app|std::ios::binary : std::ios::binary);
   if (!outputFile.is_open()) {
-    throw strerror(errno);;
+    throw strerror(errno);
   }
 
   outputFile.write((char*)contentUint8, length);
@@ -91,6 +131,16 @@ void writeFileUint8(const char* filePath, const uint8_t *contentUint8, size_t le
   outputFile.close();
 }
 
+void writeFileFloat32(const char* filePath, const float *contentFloat32, size_t length, bool isAppend) {
+  std::ofstream outputFile(filePath, isAppend ? std::ios::ate|std::ios::app|std::ios::binary : std::ios::binary);
+  if (!outputFile.is_open()) {
+    throw strerror(errno);
+  }
+
+  outputFile.write((char*)contentFloat32, length);
+
+  outputFile.close();
+}
 
 void writeWithOffset(const char* filePath, std::string content, int offset) {
   std::string fileData = readFile(filePath, 0, 0);

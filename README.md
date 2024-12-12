@@ -102,12 +102,15 @@ import RNFSTurbo from 'react-native-fs-turbo';
 const pathUtf8 = `${RNFSTurbo.DocumentDirectoryPath}/test_utf8.txt`;
 const pathBase64 = `${RNFSTurbo.DocumentDirectoryPath}/test_base64.txt`;
 const pathUint8 = `${RNFSTurbo.DocumentDirectoryPath}/test_uint8.txt`;
+const pathFloat32 = `${RNFSTurbo.DocumentDirectoryPath}/test_float32.txt`;
 
 try {
   RNFSTurbo.writeFile(path, 'Lorem ipsum dolor sit amet', 'utf8');
   RNFSTurbo.writeFile(path, 'TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ=', 'base64');
   // An array with uint8 can be passed as input data
   RNFSTurbo.writeFile(path, [76, 111, 114, 101, 109, 32, 105, 112, 115, 117, 109, 32, 100, 111, 108, 111, 114, 32, 115, 105, 116, 32, 97, 109, 101, 116], 'uint8');
+  // An array with float32 can be passed as input data
+  RNFSTurbo.writeFile(path, [0.4233244061470032, 0.5435456037521362, 2.5345540046691895, 7.2343244552612305, 3.867867946624756, 0.7876875996589661], 'float32');
 } catch (err: Error) {
   console.log(err.message);
 }
@@ -275,39 +278,42 @@ type ReadDirItem = {
 
 Node.js style version of `readDir` that returns only the names. Note the lowercase `d`.
 
-### `readFile(filepath: string, encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8'): string | number[]`
+### `readFile(filepath: string, encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'): string | number[]`
 
-Reads the file at `path` and return contents. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`. Use `base64` or `uint8` for reading binary files.
+Reads the file at `path` and return contents. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`. Use `base64` or `uint8` or `float32` for reading binary files.
 
 Note: you will take quite a performance hit if you are reading big files
 
-### `read(filepath: string, length: number, position: number, encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8'): string | number[]`
+### `read(filepath: string, length: number, position: number, encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'): string | number[]`
 
-Reads `length` bytes from the given `position` of the file at `path` and returns contents. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`. Use `base64` or `uint8` for reading binary files.
+Reads `length` bytes from the given `position` of the file at `path` and returns contents. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`, `float32`. Use `base64` or `uint8` or `float32` for reading binary files.
 
 Note: reading big files piece by piece using this method may be useful in terms of performance.
+Note: `float32` size is 4 bytes, so `position` and `length` should be specified in bytes (multiplied by 4)
 
-### (Android only) `readFileAssets(filepath: string, encoding?: "utf8" | 'ascii' | "base64" | "uint8") => string[]`
+### (Android only) `readFileAssets(filepath: string, encoding?: "utf8" | 'ascii' | "base64") => string[]`
 
-Reads the file at `path` in the Android app's assets folder and return contents. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`. Use `base64` or `uint8` for reading binary files.
+Reads the file at `path` in the Android app's assets folder and return contents. `encoding` can be one of `utf8` (default), `ascii`, `base64`. Use `base64` or `uint8` for reading binary files.
 
 `filepath` is the relative path to the file from the root of the `assets` folder.
 
-### (Android only) `readFileRes: (filepath: string, encoding?: "utf8" | 'ascii' | "base64" | "uint8") => string[]`
+### (Android only) `readFileRes: (filepath: string, encoding?: "utf8" | 'ascii' | "base64") => string[]`
 
-Reads the file named `filename` in the Android app's `res` folder and return contents. Only the file name (not folder) needs to be specified. The file type will be detected from the extension and automatically located within `res/drawable` (for image files) or `res/raw` (for everything else). `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`. Use `base64` or `uint8` for reading binary files.
+Reads the file named `filename` in the Android app's `res` folder and return contents. Only the file name (not folder) needs to be specified. The file type will be detected from the extension and automatically located within `res/drawable` (for image files) or `res/raw` (for everything else). `encoding` can be one of `utf8` (default), `ascii`, `base64`. Use `base64` for reading binary files.
 
-### `writeFile(filepath: string, contents: string | number[], encoding?: "utf8" | 'ascii' | "base64" | "uint8"): void`
+### `writeFile(filepath: string, contents: string | number[], encoding?: "utf8" | 'ascii' | "base64" | "uint8" | "float32"): void`
 
-Write the `contents` to `filepath`. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`. `options` optionally takes an object specifying the file's properties, like mode etc.
+Write the `contents` to `filepath`. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`, `float32`. `options` optionally takes an object specifying the file's properties, like mode etc.
 
-### `appendFile(filepath: string, contents: string | number[], encoding?: "utf8" | 'ascii' | "base64" | "uint8"): void`
+### `appendFile(filepath: string, contents: string | number[], encoding?: "utf8" | 'ascii' | "base64" | "uint8" | "float32"): void`
 
-Append the `contents` to `filepath`. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`.
+Append the `contents` to `filepath`. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`, `float32`.
 
-### `write(filepath: string, contents: string | number[], position?: number, encoding?: "utf8" | "base64" | "uint8"): void`
+### `write(filepath: string, contents: string | number[], position?: number, encoding?: "utf8" | "base64" | "uint8" | "float32"): void`
 
-Write the `contents` to `filepath` at the given random access position. When `position` is `undefined` or `-1` the contents is appended to the end of the file. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`.
+Write the `contents` to `filepath` at the given random access position. When `position` is `undefined` or `-1` the contents is appended to the end of the file. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`, `float32`.
+
+Note: `float32` size is 4 bytes, so `position` should be specified in bytes (multiplied by 4)
 
 ### `moveFile(filepath: string, destPath: string): void`
 
