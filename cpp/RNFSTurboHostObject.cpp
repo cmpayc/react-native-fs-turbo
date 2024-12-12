@@ -291,21 +291,21 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         } else if (propName != "read" && count == 2 && arguments[1].isString()) {
           encoding = arguments[1].asString(runtime).utf8(runtime);
         }
-        if (encoding != "utf8" && encoding != "base64" && encoding != "uint8" && encoding != "ascii") {
+        if (encoding != "utf8" && encoding != "base64" && encoding != "uint8" && encoding != "float32" && encoding != "ascii") {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", propName.c_str(), "Wrong encoding", encoding.c_str()));
         }
 
         try {
           if (propName == "readFileAssets" || propName == "readFileRes") {
 #ifdef __ANDROID__
-            return encoding == "ascii"
-              ? jsi::String::createFromAscii(
-                  runtime,
-                  platformHelper->readFileAssetsOrRes(filePath.c_str(), propName == "readFileRes").c_str()
-              ) : jsi::String::createFromUtf8(
-                  runtime,
-                  platformHelper->readFileAssetsOrRes(filePath.c_str(), propName == "readFileRes").c_str()
-              );
+            std::string resultString = platformHelper->readFileAssetsOrRes(filePath.c_str(), propName == "readFileRes");
+            if (encoding == "base64") {
+              return jsi::String::createFromUtf8(runtime, base64::to_base64(resultString));
+            } else if (encoding == "ascii") {
+              return jsi::String::createFromAscii(runtime, resultString);
+            } else {
+              return jsi::String::createFromUtf8(runtime, resultString);
+            }
 #endif
           } else {
             if (encoding == "base64") {
@@ -317,6 +317,19 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               jsi::Array res = jsi::Array(runtime, buffer.size());
               int len = 0;
               for (const int i : buffer) {
+                res.setValueAtIndex(
+                                    runtime,
+                                    len,
+                                    jsi::Value(i)
+                                    );
+                len++;
+              }
+              return res;
+            } else if (encoding == "float32") {
+              std::vector<float> buffer = readFileFloat32(filePath.c_str(), offset, length);
+              jsi::Array res = jsi::Array(runtime, buffer.size());
+              int len = 0;
+              for (const float i : buffer) {
                 res.setValueAtIndex(
                   runtime,
                   len,
@@ -356,12 +369,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         } else if (propName != "write" && count == 3 && arguments[2].isString()) {
           encoding = arguments[2].asString(runtime).utf8(runtime);
         }
-        if (encoding != "utf8" && encoding != "base64" && encoding != "uint8" && encoding != "ascii") {
+        if (encoding != "utf8" && encoding != "base64" && encoding != "uint8" && encoding != "float32" && encoding != "ascii") {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", propName.c_str(), "Wrong encoding", encoding.c_str()));
         }
-        if (encoding == "uint8" && (count < 2 || !arguments[1].isObject())) [[unlikely]] {
+        if ((encoding == "uint8" || encoding == "float32") && (count < 2 || !arguments[1].isObject())) [[unlikely]] {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('content') has to be of type number[]"));
-        } else if (encoding != "uint8" && (count < 2 || !arguments[1].isString())) [[unlikely]] {
+        } else if (encoding != "uint8" && encoding != "float32" && (count < 2 || !arguments[1].isString())) [[unlikely]] {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('content') has to be of type string"));
         }
         if ((propName == "write" && count > 4) || (propName != "write" && count > 3)) [[unlikely]] {
@@ -378,21 +391,31 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
 
         std::string content{""};
-        uint8_t *contentArr = nullptr;
+        uint8_t *contentArrUint8 = nullptr;
+        float *contentArrFloat32 = nullptr;
         int contentLength{0};
-        if (encoding == "uint8" || encoding == "ascii") {
+        if (encoding == "uint8" || encoding == "float32") {
           jsi::Array jsiObj = arguments[1].asObject(runtime).asArray(runtime);
           if (!jsiObj.isArray(runtime)) {
             throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('content') has to be of type number[]"));
           }
           jsi::Array jsiArr = arguments[1].asObject(runtime).asArray(runtime);
-          contentArr = new uint8_t[jsiArr.size(runtime)];
-          contentLength = jsiArr.size(runtime) * sizeof(uint8_t);
+          if (encoding == "float32") {
+            contentArrFloat32 = new float[jsiArr.size(runtime)];
+            contentLength = jsiArr.size(runtime) * sizeof(float);
+          } else {
+            contentArrUint8 = new uint8_t[jsiArr.size(runtime)];
+            contentLength = jsiArr.size(runtime) * sizeof(uint8_t);
+          }
           for (int i = 0; i < jsiArr.size(runtime); i++) {
             if (!jsiArr.getValueAtIndex(runtime, i).isNumber()) {
               throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('content') has to be of type number[]"));
             }
-            contentArr[i] = (int) jsiArr.getValueAtIndex(runtime, i).asNumber();
+            if (encoding == "float32") {
+              contentArrFloat32[i] = (float) jsiArr.getValueAtIndex(runtime, i).asNumber();
+            } else {
+              contentArrUint8[i] = (int) jsiArr.getValueAtIndex(runtime, i).asNumber();
+            }
           }
         } else {
           content = arguments[1].asString(runtime).utf8(runtime);
@@ -415,15 +438,24 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             }
           } else if (encoding == "uint8") {
             if (propName == "write" && offset > -1) {
-              std::string replaceString(contentLength, 0);
-              for (size_t i = 0; i < contentLength; i++) {
-                replaceString[i] = static_cast<char>(contentArr[i]);
-              }
+              std::string replaceString = reinterpret_cast<char*>(contentArrUint8);
               writeWithOffset(filePath.c_str(), replaceString, offset);
             } else {
               writeFileUint8(
                 filePath.c_str(),
-                contentArr,
+                contentArrUint8,
+                contentLength,
+                propName == "appendFile" || (propName == "write" && offset == -1)
+              );
+            }
+          } else if (encoding == "float32") {
+            if (propName == "write" && offset > -1) {
+              std::string replaceString = reinterpret_cast<char*>(contentArrFloat32);
+              writeWithOffset(filePath.c_str(), replaceString, offset);
+            } else {
+              writeFileFloat32(
+                filePath.c_str(),
+                contentArrFloat32,
                 contentLength,
                 propName == "appendFile" || (propName == "write" && offset == -1)
               );

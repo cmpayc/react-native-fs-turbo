@@ -167,7 +167,13 @@ export type OverloadedScanResult<T extends ScanResultFunc> = T extends undefined
   ? Promise<ScanResult>
   : { jobId: number };
 
-export type EncodingType = "utf8" | "base64" | "uint8" | "ascii" | undefined;
+export type EncodingType =
+  | "utf8"
+  | "base64"
+  | "uint8"
+  | "float32"
+  | "ascii"
+  | undefined;
 
 /**
  * Represents a single RNFSTurbo instance.
