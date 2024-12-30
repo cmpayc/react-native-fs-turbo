@@ -405,3 +405,22 @@ const char* RNFSTurboPlatformHelper::pathForGroup(const char* groupIdentifier) {
     throw [[NSString stringWithFormat:@"No directory for group '%@' found", nsGroupIdentifier] UTF8String];
   }
 }
+
+void RNFSTurboPlatformHelper::setResourceValue(
+  const char *path,
+  const char *optionType,
+  const char *optionValue
+) {
+  NSString* nsFilePath = [NSString stringWithUTF8String:path];
+  NSString* type = [NSString stringWithUTF8String:optionType];
+  NSString* value = [NSString stringWithUTF8String:optionValue];
+  NSURL *nsFileUrl = [NSURL fileURLWithPath:nsFilePath];
+  if ([type isEqualToString:NSFileProtectionKey]) {
+    NSMutableDictionary *attributes = [[NSMutableDictionary alloc] init];
+    [attributes setValue:value forKey:@"NSFileProtectionKey"];
+    [[NSFileManager defaultManager] setAttributes:attributes ofItemAtPath:nsFilePath error:nil];
+  } else if ([type isEqualToString:NSURLIsExcludedFromBackupKey]) {
+    BOOL isExclude = [value isEqualToString:@"YES"];
+    [nsFileUrl setResourceValue:@(isExclude) forKey:NSURLIsExcludedFromBackupKey error:nil];
+  }
+}

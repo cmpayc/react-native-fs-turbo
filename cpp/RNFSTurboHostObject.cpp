@@ -286,10 +286,29 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           offset = arguments[2].asNumber();
         }
         std::string encoding{"utf8"};
+        int optionsIndex{-1};
+        bool optionsIsObject{false};
         if (propName == "read" && count == 4 && arguments[3].isString()) {
-          encoding = arguments[3].asString(runtime).utf8(runtime);
+          optionsIndex = 3;
         } else if (propName != "read" && count == 2 && arguments[1].isString()) {
-          encoding = arguments[1].asString(runtime).utf8(runtime);
+          optionsIndex = 1;
+        } else if (propName == "read" && count == 4 && arguments[3].isObject()) {
+          optionsIndex = 3;
+          optionsIsObject = true;
+        } else if (propName != "read" && count == 2 && arguments[1].isObject()) {
+          optionsIndex = 1;
+          optionsIsObject = true;
+        }
+        if (optionsIndex > -1 && !optionsIsObject) {
+          encoding = arguments[optionsIndex].asString(runtime).utf8(runtime);
+        } else if (optionsIndex > -1 && optionsIsObject) {
+          auto optionsObject = arguments[optionsIndex].asObject(runtime);
+          if (optionsObject.hasProperty(runtime, "encoding")) {
+            auto encodingOption = optionsObject.getProperty(runtime, "encoding");
+            if (encodingOption.isString()) {
+              encoding = encodingOption.asString(runtime).utf8(runtime);
+            }
+          }
         }
         if (encoding != "utf8" && encoding != "base64" && encoding != "uint8" && encoding != "float32" && encoding != "ascii") {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", propName.c_str(), "Wrong encoding", encoding.c_str()));
@@ -364,10 +383,38 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "First argument ('filepath') has to be of type string"));
         }
         std::string encoding{"utf8"};
+        std::map<std::string, std::string> options;
+        int optionsIndex{-1};
+        bool optionsIsObject{false};
         if (propName == "write" && count == 4 && arguments[3].isString()) {
-          encoding = arguments[3].asString(runtime).utf8(runtime);
+          optionsIndex = 3;
         } else if (propName != "write" && count == 3 && arguments[2].isString()) {
-          encoding = arguments[2].asString(runtime).utf8(runtime);
+          optionsIndex = 2;
+        } else if (propName == "write" && count == 4 && arguments[3].isObject()) {
+          optionsIndex = 3;
+          optionsIsObject = true;
+        } else if (propName != "write" && count == 3 && arguments[2].isObject()) {
+          optionsIndex = 2;
+          optionsIsObject = true;
+        }
+        if (optionsIndex > -1 && !optionsIsObject) {
+          encoding = arguments[optionsIndex].asString(runtime).utf8(runtime);
+        } else if (optionsIndex > -1 && optionsIsObject) {
+          auto optionsObject = arguments[optionsIndex].asObject(runtime);
+          if (optionsObject.hasProperty(runtime, "encoding")) {
+            auto encodingOption = optionsObject.getProperty(runtime, "encoding");
+            if (encodingOption.isString()) {
+              encoding = encodingOption.asString(runtime).utf8(runtime);
+            }
+          }
+#ifdef __APPLE__
+          if (optionsObject.hasProperty(runtime, "NSFileProtectionKey")) {
+            auto protectionOption = optionsObject.getProperty(runtime, "NSFileProtectionKey");
+            if (protectionOption.isString()) {
+              options["NSFileProtectionKey"] = protectionOption.asString(runtime).utf8(runtime);
+            }
+          }
+#endif
         }
         if (encoding != "utf8" && encoding != "base64" && encoding != "uint8" && encoding != "float32" && encoding != "ascii") {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", propName.c_str(), "Wrong encoding", encoding.c_str()));
@@ -475,6 +522,15 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               );
             }
           }
+#ifdef __APPLE__
+          if (options.count("NSFileProtectionKey") > 0) {
+            platformHelper->setResourceValue(
+              filePath.c_str(),
+              "NSFileProtectionKey",
+              options["NSFileProtectionKey"].c_str()
+            );
+          }
+#endif
         } catch (const char *error_message) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), propName.c_str(), error_message));
         } catch (std::exception const& e) {
@@ -499,9 +555,32 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
+        
+        std::map<std::string, std::string> options;
+        if (count == 3 && arguments[2].isObject()) {
+          auto optionsObject = arguments[2].asObject(runtime);
+#ifdef __APPLE__
+          if (optionsObject.hasProperty(runtime, "NSFileProtectionKey")) {
+            auto protectionOption = optionsObject.getProperty(runtime, "NSFileProtectionKey");
+            if (protectionOption.isString()) {
+              options["NSFileProtectionKey"] = protectionOption.asString(runtime).utf8(runtime);
+            }
+          }
+#endif
+        }
 
         try {
           fs::rename(filePath.c_str(), destPath.c_str());
+          
+#ifdef __APPLE__
+          if (options.count("NSFileProtectionKey") > 0) {
+            platformHelper->setResourceValue(
+              destPath.c_str(),
+              "NSFileProtectionKey",
+              options["NSFileProtectionKey"].c_str()
+            );
+          }
+#endif
         } catch (fs::filesystem_error& e) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "moveFile", e.what()));
         }
@@ -524,6 +603,19 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
 
         std::string srcFolderPath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         std::string destFolderPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
+        
+        std::map<std::string, std::string> options;
+        if (count == 3 && arguments[2].isObject()) {
+          auto optionsObject = arguments[2].asObject(runtime);
+#ifdef __APPLE__
+          if (optionsObject.hasProperty(runtime, "NSFileProtectionKey")) {
+            auto protectionOption = optionsObject.getProperty(runtime, "NSFileProtectionKey");
+            if (protectionOption.isString()) {
+              options["NSFileProtectionKey"] = protectionOption.asString(runtime).utf8(runtime);
+            }
+          }
+#endif
+        }
 
         struct stat t_stat;
         int res = stat(srcFolderPath.c_str(), &t_stat);
@@ -536,6 +628,16 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
 
         try {
           fs::copy(srcFolderPath, destFolderPath, fs::copy_options::overwrite_existing | fs::copy_options::recursive);
+          
+#ifdef __APPLE__
+          if (options.count("NSFileProtectionKey") > 0) {
+            platformHelper->setResourceValue(
+              destFolderPath.c_str(),
+              "NSFileProtectionKey",
+              options["NSFileProtectionKey"].c_str()
+            );
+          }
+#endif
         } catch (fs::filesystem_error& e) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyFolder", e.what()));
         }
@@ -563,6 +665,19 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
+        
+        std::map<std::string, std::string> options;
+        if (count == 3 && arguments[2].isObject()) {
+          auto optionsObject = arguments[2].asObject(runtime);
+#ifdef __APPLE__
+          if (optionsObject.hasProperty(runtime, "NSFileProtectionKey")) {
+            auto protectionOption = optionsObject.getProperty(runtime, "NSFileProtectionKey");
+            if (protectionOption.isString()) {
+              options["NSFileProtectionKey"] = protectionOption.asString(runtime).utf8(runtime);
+            }
+          }
+#endif
+        }
 
         try {
           if (propName == "copyFileAssets" || propName == "copyFileRes") {
@@ -571,6 +686,16 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
 #endif
           } else {
             fs::copy(filePath.c_str(), destPath.c_str());
+            
+#ifdef __APPLE__
+          if (options.count("NSFileProtectionKey") > 0) {
+            platformHelper->setResourceValue(
+              destPath.c_str(),
+              "NSFileProtectionKey",
+              options["NSFileProtectionKey"].c_str()
+            );
+          }
+#endif
           }
         } catch (fs::filesystem_error& e) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), e.what()));
@@ -834,29 +959,44 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
 
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
 
-        bool isExcludedFromBackupKey{false};
+        std::map<std::string, std::string> options;
         if (count == 2 && arguments[1].isObject()) {
-            jsi::Value propIsExcludedFromBackupKey = arguments[1].asObject(runtime).getProperty(runtime, "NSURLIsExcludedFromBackupKey");
-            if (propIsExcludedFromBackupKey.isBool()) {
-                isExcludedFromBackupKey = propIsExcludedFromBackupKey.getBool();
+          auto optionsObject = arguments[1].asObject(runtime);
+#ifdef __APPLE__
+          if (optionsObject.hasProperty(runtime, "NSFileProtectionKey")) {
+            auto protectionOption = optionsObject.getProperty(runtime, "NSFileProtectionKey");
+            if (protectionOption.isString()) {
+              options["NSFileProtectionKey"] = protectionOption.asString(runtime).utf8(runtime);
             }
+          }
+          if (optionsObject.hasProperty(runtime, "NSURLIsExcludedFromBackupKey")) {
+            auto excludeFromBackupOption = optionsObject.getProperty(runtime, "NSURLIsExcludedFromBackupKey");
+            if (excludeFromBackupOption.isBool()) {
+              options["NSURLIsExcludedFromBackupKey"] = excludeFromBackupOption.getBool() ? "YES" : "NO";
+            }
+          }
+#endif
         }
 
         try {
           fs::create_directories(filePath);
 
-          if (isExcludedFromBackupKey) {
 #ifdef __APPLE__
-            NSString *nsFilePath = [NSString stringWithCString:filePath.c_str()
-                                                          encoding:[NSString defaultCStringEncoding]];
-            NSURL *url = [NSURL fileURLWithPath:nsFilePath];
-            BOOL success = [url setResourceValue:[NSNumber numberWithBool:YES] forKey:NSURLIsExcludedFromBackupKey error:nil];
-
-            if (!success) {
-              throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), "mkdir", "Can not set NSURLIsExcludedFromBackupKey"));
-            }
-#endif
+          if (options.count("NSFileProtectionKey") > 0) {
+            platformHelper->setResourceValue(
+              filePath.c_str(),
+              "NSFileProtectionKey",
+              options["NSFileProtectionKey"].c_str()
+            );
           }
+          if (options.count("NSURLIsExcludedFromBackupKey") > 0) {
+            platformHelper->setResourceValue(
+              filePath.c_str(),
+              "NSURLIsExcludedFromBackupKey",
+              options["NSURLIsExcludedFromBackupKey"].c_str()
+            );
+          }
+#endif
         } catch (fs::filesystem_error& e) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "mkdir", e.what()));
         }

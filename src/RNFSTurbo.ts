@@ -23,7 +23,9 @@ import type {
   ScanResult,
   ScanResultFunc,
   OverloadedScanResult,
-  EncodingType,
+  ReadOptions,
+  WriteOptions,
+  MoveCopyOptions,
 } from "./Types";
 
 /**
@@ -129,75 +131,87 @@ class RNFSTurbo implements RNFSTurboInterface {
     return func(dirpath);
   }
 
-  readFile<T extends EncodingType = undefined>(
+  readFile<T extends ReadOptions = undefined>(
     filepath: string,
-    encoding?: T,
+    options?: T,
   ): OverloadedReadResult<T> {
     const func = this.getFunctionFromCache("readFile");
-    return func(filepath, encoding);
+    return func(filepath, options);
   }
 
-  read<T extends EncodingType = undefined>(
+  read<T extends ReadOptions = undefined>(
     filepath: string,
     length: number,
     position: number,
-    encoding?: T,
+    options?: T,
   ): OverloadedReadResult<T> {
     const func = this.getFunctionFromCache("read");
-    return func(filepath, length, position, encoding);
+    return func(filepath, length, position, options);
   }
 
-  readFileAssets(filepath: string, encoding?: EncodingType): string[] {
+  readFileAssets(filepath: string, options?: ReadOptions): string[] {
     const func = this.getFunctionFromCache("readFileAssets");
-    return func(filepath, encoding);
+    return func(filepath, options);
   }
 
-  readFileRes(filepath: string, encoding?: EncodingType): string[] {
+  readFileRes(filepath: string, options?: ReadOptions): string[] {
     const func = this.getFunctionFromCache("readFileRes");
-    return func(filepath, encoding);
+    return func(filepath, options);
   }
 
   writeFile(
     filepath: string,
     contents: string | number[],
-    encoding?: EncodingType,
+    options?: WriteOptions,
   ): void {
     const func = this.getFunctionFromCache("writeFile");
-    return func(filepath, contents, encoding);
+    return func(filepath, contents, options);
   }
 
   appendFile(
     filepath: string,
     contents: string | number[],
-    encoding?: EncodingType,
+    options?: WriteOptions,
   ): void {
     const func = this.getFunctionFromCache("appendFile");
-    return func(filepath, contents, encoding);
+    return func(filepath, contents, options);
   }
 
   write(
     filepath: string,
     contents: string | number[],
     position?: number,
-    encoding?: EncodingType,
+    options?: WriteOptions,
   ): void {
     const func = this.getFunctionFromCache("write");
-    return func(filepath, contents, position, encoding);
+    return func(filepath, contents, position, options);
   }
 
-  moveFile(filepath: string, destPath: string): void {
+  moveFile(
+    filepath: string,
+    destPath: string,
+    options?: MoveCopyOptions,
+  ): void {
     const func = this.getFunctionFromCache("moveFile");
-    return func(filepath, destPath);
+    return func(filepath, destPath, options);
   }
 
-  copyFolder(srcFolderPath: string, destFolderPath: string): void {
+  copyFolder(
+    srcFolderPath: string,
+    destFolderPath: string,
+    options?: MoveCopyOptions,
+  ): void {
     const func = this.getFunctionFromCache("copyFolder");
-    return func(srcFolderPath, destFolderPath);
+    return func(srcFolderPath, destFolderPath, options);
   }
 
-  copyFile(filepath: string, destPath: string): void {
+  copyFile(
+    filepath: string,
+    destPath: string,
+    options?: MoveCopyOptions,
+  ): void {
     const func = this.getFunctionFromCache("copyFile");
-    return func(filepath, destPath);
+    return func(filepath, destPath, options);
   }
 
   copyFileAssets(filepath: string, destPath: string): void {

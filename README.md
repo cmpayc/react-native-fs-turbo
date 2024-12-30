@@ -278,60 +278,174 @@ type ReadDirItem = {
 
 Node.js style version of `readDir` that returns only the names. Note the lowercase `d`.
 
-### `readFile(filepath: string, encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'): string | number[]`
+### `readFile(filepath: string, options?: ReadOptions): string | number[]`
 
-Reads the file at `path` and return contents. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`. Use `base64` or `uint8` or `float32` for reading binary files.
+Reads the file at `path` and return contents. `options` can be string of encrypted types or object, default is `utf8`. Use `base64` or `uint8` or `float32` encoding for reading binary files.
+
+```ts
+type ReadOptions =
+  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
+  | { encoding: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32' };
+```
 
 Note: you will take quite a performance hit if you are reading big files
 
-### `read(filepath: string, length: number, position: number, encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'): string | number[]`
+### `read(filepath: string, length: number, position: number, options?: ReadOptions): string | number[]`
 
-Reads `length` bytes from the given `position` of the file at `path` and returns contents. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`, `float32`. Use `base64` or `uint8` or `float32` for reading binary files.
+Reads `length` bytes from the given `position` of the file at `path` and returns contents. `options` can be string of encrypted types or object, default is `utf8`. Use `base64` or `uint8` or `float32` encoding for reading binary files.
+
+```ts
+type ReadOptions =
+  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
+  | { encoding: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32' };
+```
 
 Note: reading big files piece by piece using this method may be useful in terms of performance.
 Note: `float32` size is 4 bytes, so `position` and `length` should be specified in bytes (multiplied by 4)
 
-### (Android only) `readFileAssets(filepath: string, encoding?: "utf8" | 'ascii' | "base64") => string[]`
+### (Android only) `readFileAssets(filepath: string, options?: ReadOptions) => string[]`
 
-Reads the file at `path` in the Android app's assets folder and return contents. `encoding` can be one of `utf8` (default), `ascii`, `base64`. Use `base64` or `uint8` for reading binary files.
+Reads the file at `path` in the Android app's assets folder and return contents. `options` can be string of encrypted types or object, default is `utf8`. Use `base64` encoding for reading binary files.
 
 `filepath` is the relative path to the file from the root of the `assets` folder.
 
-### (Android only) `readFileRes: (filepath: string, encoding?: "utf8" | 'ascii' | "base64") => string[]`
+```ts
+type ReadOptions =
+  | 'utf8' | 'ascii' | 'base64'
+  | { encoding: 'utf8' | 'ascii' | 'base64' };
+```
 
-Reads the file named `filename` in the Android app's `res` folder and return contents. Only the file name (not folder) needs to be specified. The file type will be detected from the extension and automatically located within `res/drawable` (for image files) or `res/raw` (for everything else). `encoding` can be one of `utf8` (default), `ascii`, `base64`. Use `base64` for reading binary files.
+### (Android only) `readFileRes: (filepath: string, options?: ReadOptions) => string[]`
 
-### `writeFile(filepath: string, contents: string | number[], encoding?: "utf8" | 'ascii' | "base64" | "uint8" | "float32"): void`
+Reads the file named `filename` in the Android app's `res` folder and return contents. Only the file name (not folder) needs to be specified. The file type will be detected from the extension and automatically located within `res/drawable` (for image files) or `res/raw` (for everything else). `options` can be string of encrypted types or object, default is `utf8`. Use `base64` encoding for reading binary files.
 
-Write the `contents` to `filepath`. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`, `float32`. `options` optionally takes an object specifying the file's properties, like mode etc.
+```ts
+type ReadOptions =
+  | 'utf8' | 'ascii' | 'base64'
+  | { encoding: 'utf8' | 'ascii' };
+```
 
-### `appendFile(filepath: string, contents: string | number[], encoding?: "utf8" | 'ascii' | "base64" | "uint8" | "float32"): void`
+### `writeFile(filepath: string, contents: string | number[], options?: WriteOptions): void`
 
-Append the `contents` to `filepath`. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`, `float32`.
+Write the `contents` to `filepath`. `options` can be string of encrypted types or object, default is `utf8`
 
-### `write(filepath: string, contents: string | number[], position?: number, encoding?: "utf8" | "base64" | "uint8" | "float32"): void`
+```ts
+type WriteOptions =
+  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
+  | {
+      encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32',
+      NSFileProtectionKey?:
+        |"NSFileProtectionNone"
+        | "NSFileProtectionComplete"
+        | "NSFileProtectionCompleteUnlessOpen"
+        | "NSFileProtectionCompleteUntilFirstUserAuthentication"
+        | "NSFileProtectionCompleteWhenUserInactive" // iOS 17+ only
+    };
+```
 
-Write the `contents` to `filepath` at the given random access position. When `position` is `undefined` or `-1` the contents is appended to the end of the file. `encoding` can be one of `utf8` (default), `ascii`, `base64`, `uint8`, `float32`.
+(IOS only): `options.NSFileProtectionKey` property can be provided to set this attribute on iOS platforms.
+
+### `appendFile(filepath: string, contents: string | number[], options?: WriteOptions): void`
+
+Append the `contents` to `filepath`. `encoding` can be string of encrypted types or object, default is `utf8`.
+
+```ts
+type WriteOptions =
+  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
+  | {
+      encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32',
+      NSFileProtectionKey?:
+        |"NSFileProtectionNone"
+        | "NSFileProtectionComplete"
+        | "NSFileProtectionCompleteUnlessOpen"
+        | "NSFileProtectionCompleteUntilFirstUserAuthentication"
+        | "NSFileProtectionCompleteWhenUserInactive" // iOS 17+ only
+    };
+```
+
+(IOS only): `options.NSFileProtectionKey` property can be provided to set this attribute on iOS platforms.
+
+### `write(filepath: string, contents: string | number[], position?: number, options?: WriteOptions): void`
+
+Write the `contents` to `filepath` at the given random access position. When `position` is `undefined` or `-1` the contents is appended to the end of the file. `encoding` can be string of encrypted types or object, default is `utf8`.
+
+```ts
+type WriteOptions =
+  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
+  | {
+      encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32',
+      NSFileProtectionKey?:
+        |"NSFileProtectionNone"
+        | "NSFileProtectionComplete"
+        | "NSFileProtectionCompleteUnlessOpen"
+        | "NSFileProtectionCompleteUntilFirstUserAuthentication"
+        | "NSFileProtectionCompleteWhenUserInactive" // iOS 17+ only
+    };
+```
 
 Note: `float32` size is 4 bytes, so `position` should be specified in bytes (multiplied by 4)
 
-### `moveFile(filepath: string, destPath: string): void`
+(IOS only): `options.NSFileProtectionKey` property can be provided to set this attribute on iOS platforms.
+
+### `moveFile(filepath: string, destPath: string, options?: MoveCopyOptions): void`
 
 Moves the file located at `filepath` to `destPath`. This is more performant than reading and then re-writing the file data because the move is done natively and the data doesn't have to be copied or cross the bridge.
 
+```ts
+type MoveCopyOptions =
+  | {
+      NSFileProtectionKey?:
+        |"NSFileProtectionNone"
+        | "NSFileProtectionComplete"
+        | "NSFileProtectionCompleteUnlessOpen"
+        | "NSFileProtectionCompleteUntilFirstUserAuthentication"
+        | "NSFileProtectionCompleteWhenUserInactive" // iOS 17+ only
+    };
+```
+
 Note: Overwrites existing file
 
-### `copyFolder(srcFolderPath: string, destFolderPath: string): void`
+(IOS only): `options.NSFileProtectionKey` property can be provided to set this attribute on iOS platforms.
+
+### `copyFolder(srcFolderPath: string, destFolderPath: string, options?: MoveCopyOptions): void`
 
 Copies the contents located at `srcFolderPath` to `destFolderPath`.
 
+```ts
+type MoveCopyOptions =
+  | {
+      NSFileProtectionKey?:
+        |"NSFileProtectionNone"
+        | "NSFileProtectionComplete"
+        | "NSFileProtectionCompleteUnlessOpen"
+        | "NSFileProtectionCompleteUntilFirstUserAuthentication"
+        | "NSFileProtectionCompleteWhenUserInactive" // iOS 17+ only
+    };
+```
+
 Note: Recursively replaces all files and folders
 
-### `copyFile(filepath: string, destPath: string): void`
+(IOS only): `options.NSFileProtectionKey` property can be provided to set this attribute on iOS platforms.
+
+### `copyFile(filepath: string, destPath: string, options?: MoveCopyOptions): void`
 
 Copies the file located at `filepath` to `destPath`.
 
+```ts
+type MoveCopyOptions =
+  | {
+      NSFileProtectionKey?:
+        |"NSFileProtectionNone"
+        | "NSFileProtectionComplete"
+        | "NSFileProtectionCompleteUnlessOpen"
+        | "NSFileProtectionCompleteUntilFirstUserAuthentication"
+        | "NSFileProtectionCompleteWhenUserInactive" // iOS 17+ only
+    };
+```
+
 Note: Error will be thrown if the file already exists.
+
+(IOS only): `options.NSFileProtectionKey` property can be provided to set this attribute on iOS platforms.
 
 ### (Android only) `copyFileAssets(filepath: string, destPath: string): void`
 
@@ -449,12 +563,20 @@ Note: `ctime` no longer supported
 Create a directory at `filepath`. Automatically creates parents and does not throw if already exists (works like Linux `mkdir -p`).
 
 ```ts
-type MkdirOptions = {
-  NSURLIsExcludedFromBackupKey?: boolean; // iOS only
-};
+type MkdirOptions =
+  | {
+      NSFileProtectionKey?:
+        |"NSFileProtectionNone"
+        | "NSFileProtectionComplete"
+        | "NSFileProtectionCompleteUnlessOpen"
+        | "NSFileProtectionCompleteUntilFirstUserAuthentication"
+        | "NSFileProtectionCompleteWhenUserInactive"; // iOS 17+ only
+      NSURLIsExcludedFromBackupKey?: boolean;
+    };
 ```
 
-(IOS only): The `NSURLIsExcludedFromBackupKey` property can be provided to set this attribute on iOS platforms. Apple will *reject* apps for storing offline cache data that does not have this attribute.
+(IOS only): `options.NSFileProtectionKey` property can be provided to set this attribute on iOS platforms.
+(IOS only): The `options.NSURLIsExcludedFromBackupKey` property can be provided to set this attribute on iOS platforms. Apple will *reject* apps for storing offline cache data that does not have this attribute.
 
 ### `downloadFile(options: DownloadFileOptions, completeCallback?: DownloadResultFunc, errorCallback?: DownloadErrorFunc): DownloadResult | Promise<DownloadResult>`
 
