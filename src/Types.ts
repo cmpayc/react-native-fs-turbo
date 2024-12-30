@@ -125,10 +125,6 @@ export type Algorithms =
   | "sha384"
   | "sha512";
 
-export type MkdirOptions = {
-  NSURLIsExcludedFromBackupKey?: boolean; // iOS only
-};
-
 export type DownloadResultFunc = ((res: DownloadResult) => void) | undefined;
 export type DownloadErrorFunc = ((res: DownloadError) => void) | undefined;
 
@@ -149,7 +145,9 @@ export type OverloadedReadDirItem<T extends boolean | undefined> = T extends
   ? ReadDirItem<() => boolean>
   : ReadDirItem<boolean>;
 
-export type OverloadedReadResult<T extends EncodingType> = T extends "uint8"
+export type OverloadedReadResult<T extends ReadOptions> = T extends
+  | "uint8"
+  | "float32"
   ? number[]
   : string;
 
@@ -167,12 +165,37 @@ export type OverloadedScanResult<T extends ScanResultFunc> = T extends undefined
   ? Promise<ScanResult>
   : { jobId: number };
 
-export type EncodingType =
-  | "utf8"
-  | "base64"
-  | "uint8"
-  | "float32"
-  | "ascii"
+export type EncodingType = "utf8" | "base64" | "uint8" | "float32" | "ascii";
+
+export type IOSProtectionTypes =
+  | "NSFileProtectionNone"
+  | "NSFileProtectionComplete"
+  | "NSFileProtectionCompleteUnlessOpen"
+  | "NSFileProtectionCompleteUntilFirstUserAuthentication"
+  | "NSFileProtectionCompleteWhenUserInactive";
+
+export type ReadOptions = EncodingType | { encoding: EncodingType } | undefined;
+
+export type WriteOptions =
+  | EncodingType
+  | {
+      encoding?: EncodingType;
+      NSFileProtectionKey?: IOSProtectionTypes;
+    }
+  | undefined;
+
+export type MoveCopyOptions =
+  | {
+      NSFileProtectionKey?: IOSProtectionTypes;
+      NSURLIsExcludedFromBackupKey?: boolean;
+    }
+  | undefined;
+
+export type MkdirOptions =
+  | {
+      NSFileProtectionKey?: IOSProtectionTypes;
+      NSURLIsExcludedFromBackupKey?: boolean;
+    }
   | undefined;
 
 /**
@@ -204,37 +227,41 @@ export interface RNFSTurboInterface {
     isNewFormat?: T,
   ): OverloadedReadDirItem<T>[];
   readdir(dirpath: string): string[];
-  readFile<T extends EncodingType = undefined>(
+  readFile<T extends ReadOptions = undefined>(
     filepath: string,
-    encoding?: T,
+    options?: T,
   ): OverloadedReadResult<T>;
-  read<T extends EncodingType = undefined>(
+  read<T extends ReadOptions = undefined>(
     filepath: string,
     length: number,
     position: number,
-    encoding?: T,
+    options?: T,
   ): OverloadedReadResult<T>;
-  readFileAssets(filepath: string, encoding?: EncodingType): string[];
-  readFileRes(filepath: string, encoding?: EncodingType): string[];
+  readFileAssets(filepath: string, options?: ReadOptions): string[];
+  readFileRes(filepath: string, options?: ReadOptions): string[];
   writeFile(
     filepath: string,
     contents: string | number[],
-    encoding?: EncodingType,
+    options?: WriteOptions,
   ): void;
   appendFile(
     filepath: string,
     contents: string | number[],
-    encoding?: EncodingType,
+    options?: WriteOptions,
   ): void;
   write(
     filepath: string,
     contents: string | number[],
     position?: number,
-    encoding?: EncodingType,
+    options?: WriteOptions,
   ): void;
-  moveFile(filepath: string, destPath: string): void;
-  copyFolder(srcFolderPath: string, destFolderPath: string): void;
-  copyFile(filepath: string, destPath: string): void;
+  moveFile(filepath: string, destPath: string, options?: MoveCopyOptions): void;
+  copyFolder(
+    srcFolderPath: string,
+    destFolderPath: string,
+    options?: MoveCopyOptions,
+  ): void;
+  copyFile(filepath: string, destPath: string, options?: MoveCopyOptions): void;
   copyFileAssets(filepath: string, destPath: string): void;
   copyFileRes(filepath: string, destPath: string): void;
   copyAssetsFileIOS(

@@ -154,4 +154,6 @@ public:
   std::vector<std::string> getAllExternalFilesDirs();
   
   const char* pathForGroup(const char* groupIdentifier);
+  
+  void setResourceValue(const char* path, const char* optionType, const char* optionValue);
 };
