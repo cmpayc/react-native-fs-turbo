@@ -13,58 +13,92 @@ void JavaHashMapToStlStringStringMap(JNIEnv *env, jobject hashMap, std::map<std:
   // Get the Map's entry Set.
   jclass mapClass = env->FindClass("java/util/Map");
   if (mapClass == nullptr) {
-      return;
+    env->DeleteLocalRef(hashMap);
+    return;
   }
   jmethodID entrySet =
-          env->GetMethodID(mapClass, "entrySet", "()Ljava/util/Set;");
+    env->GetMethodID(mapClass, "entrySet", "()Ljava/util/Set;");
   if (entrySet == nullptr) {
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
     return;
   }
   jobject set = env->CallObjectMethod(hashMap, entrySet);
   if (set == nullptr) {
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
     return;
   }
   // Obtain an iterator over the Set
   jclass setClass = env->FindClass("java/util/Set");
   if (setClass == nullptr) {
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
+    env->DeleteLocalRef(set);
     return;
   }
   jmethodID iterator =
-          env->GetMethodID(setClass, "iterator", "()Ljava/util/Iterator;");
+    env->GetMethodID(setClass, "iterator", "()Ljava/util/Iterator;");
   if (iterator == nullptr) {
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
+    env->DeleteLocalRef(set);
+    env->DeleteLocalRef(setClass);
     return;
   }
   jobject iter = env->CallObjectMethod(set, iterator);
   if (iter == nullptr) {
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
+    env->DeleteLocalRef(set);
+    env->DeleteLocalRef(setClass);
     return;
   }
   // Get the Iterator method IDs
   jclass iteratorClass = env->FindClass("java/util/Iterator");
   if (iteratorClass == nullptr) {
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
+    env->DeleteLocalRef(set);
+    env->DeleteLocalRef(setClass);
+    env->DeleteLocalRef(iter);
     return;
   }
   jmethodID hasNext = env->GetMethodID(iteratorClass, "hasNext", "()Z");
-  if (hasNext == nullptr) {
-    return;
-  }
   jmethodID next =
-          env->GetMethodID(iteratorClass, "next", "()Ljava/lang/Object;");
-  if (next == nullptr) {
+    env->GetMethodID(iteratorClass, "next", "()Ljava/lang/Object;");
+  if (hasNext == nullptr || next == nullptr) {
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
+    env->DeleteLocalRef(set);
+    env->DeleteLocalRef(setClass);
+    env->DeleteLocalRef(iter);
+    env->DeleteLocalRef(iteratorClass);
     return;
   }
   // Get the Entry class method IDs
   jclass entryClass = env->FindClass("java/util/Map$Entry");
   if (entryClass == nullptr) {
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
+    env->DeleteLocalRef(set);
+    env->DeleteLocalRef(setClass);
+    env->DeleteLocalRef(iter);
+    env->DeleteLocalRef(iteratorClass);
     return;
   }
   jmethodID getKey =
-          env->GetMethodID(entryClass, "getKey", "()Ljava/lang/Object;");
-  if (getKey == nullptr) {
-    return;
-  }
+    env->GetMethodID(entryClass, "getKey", "()Ljava/lang/Object;");
   jmethodID getValue =
-          env->GetMethodID(entryClass, "getValue", "()Ljava/lang/Object;");
-  if (getValue == nullptr) {
+    env->GetMethodID(entryClass, "getValue", "()Ljava/lang/Object;");
+  if (getKey == nullptr || getValue == nullptr) {
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
+    env->DeleteLocalRef(set);
+    env->DeleteLocalRef(setClass);
+    env->DeleteLocalRef(iter);
+    env->DeleteLocalRef(iteratorClass);
+    env->DeleteLocalRef(entryClass);
     return;
   }
   // Iterate over the entry Set
@@ -90,6 +124,13 @@ void JavaHashMapToStlStringStringMap(JNIEnv *env, jobject hashMap, std::map<std:
     env->ReleaseStringUTFChars(value, valueStr);
     env->DeleteLocalRef(value);
   }
+  env->DeleteLocalRef(hashMap);
+  env->DeleteLocalRef(mapClass);
+  env->DeleteLocalRef(set);
+  env->DeleteLocalRef(setClass);
+  env->DeleteLocalRef(iter);
+  env->DeleteLocalRef(iteratorClass);
+  env->DeleteLocalRef(entryClass);
 }
 
 extern "C"
@@ -108,7 +149,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
     ).count();
     RNFSTurboPlatformHelper::downloadCallbacks[jobId].lastProgressCall = now - std::chrono::seconds(1);
     if (elapsedTime < 50) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     RNFSTurboPlatformHelper::downloadCallbacks[jobId].completeCallback(
       jobId,
@@ -168,8 +209,8 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
   double contentLength,
   double bytesWritten
 ) {
-  std::map<int, DownloadCallbacks>::iterator callback = RNFSTurboPlatformHelper::downloadCallbacks.find(jobId);
-  if (callback != RNFSTurboPlatformHelper::downloadCallbacks.end()) {
+  std::map<int, DownloadCallbacks>::iterator it = RNFSTurboPlatformHelper::downloadCallbacks.find(jobId);
+  if (it != RNFSTurboPlatformHelper::downloadCallbacks.end()) {
     const auto now = std::chrono::steady_clock::now();
     const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
       now - RNFSTurboPlatformHelper::downloadCallbacks[jobId].lastProgressCall
@@ -233,8 +274,8 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_uploadP
   double totalBytesExpectedToSend,
   double totalBytesSent
 ) {
-  std::map<int, UploadCallbacks>::iterator callback = RNFSTurboPlatformHelper::uploadCallbacks.find(jobId);
-  if (callback != RNFSTurboPlatformHelper::uploadCallbacks.end()) {
+  std::map<int, UploadCallbacks>::iterator it = RNFSTurboPlatformHelper::uploadCallbacks.find(jobId);
+  if (it != RNFSTurboPlatformHelper::uploadCallbacks.end()) {
     const auto now = std::chrono::steady_clock::now();
     const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
       now - RNFSTurboPlatformHelper::uploadCallbacks[jobId].lastProgressCall
@@ -312,7 +353,7 @@ std::vector<ReadDirItem> RNFSTurboPlatformHelper::readDirAssets(const char* dirP
     jniObj,
     mid,
     jniEnv->NewStringUTF(dirPath)
- );
+  );
   if (jniEnv->ExceptionCheck()) {
     jniEnv->ExceptionClear();
     throw "Dir not exists or access denied";
@@ -341,8 +382,8 @@ std::vector<ReadDirItem> RNFSTurboPlatformHelper::readDirAssets(const char* dirP
     jniEnv->ReleaseStringUTFChars(isDirectoryStr, isDirectoryChr);
     jniEnv->DeleteLocalRef(isDirectoryStr);
   }
-  jniEnv->DeleteLocalRef(filesObject);
   jniEnv->DeleteLocalRef(jniCls);
+  jniEnv->DeleteLocalRef(filesObject);
 
   return files;
 }
@@ -369,6 +410,9 @@ std::string RNFSTurboPlatformHelper::readFileAssetsOrRes(const char* filePath, b
   std::string fileData = (char*) fileJBytes;
   jniEnv->ReleaseByteArrayElements(fileBytesArr, fileJBytes, 0);
 
+  jniEnv->DeleteLocalRef(jniCls);
+  jniEnv->DeleteLocalRef(fileBytesArr);
+
   return fileData;
 }
 
@@ -387,6 +431,7 @@ void RNFSTurboPlatformHelper::copyFileAssetsOrRes(const char *filePath, const ch
     jniEnv->NewStringUTF(destPath),
     isRes
   );
+  jniEnv->DeleteLocalRef(jniCls);
   if (jniEnv->ExceptionCheck()) {
     jniEnv->ExceptionClear();
     throw isRes ? "Failed to copy res" : "Failed to copy asset";
@@ -407,6 +452,7 @@ bool RNFSTurboPlatformHelper::existsAssetsOrRes(const char *filePath, bool isRes
     jniEnv->NewStringUTF(filePath),
     isRes
   );
+  jniEnv->DeleteLocalRef(jniCls);
   if (jniEnv->ExceptionCheck()) {
     jniEnv->ExceptionClear();
     throw isRes ? "Failed to open asset" : "Failed to open res";
@@ -469,7 +515,7 @@ void RNFSTurboPlatformHelper::downloadFile(
   }
 
   jniEnv->CallVoidMethod(
-    jniCls,
+    jniObj,
     mid,
     jobId,
     jniEnv->NewStringUTF(fromUrl),
@@ -482,8 +528,8 @@ void RNFSTurboPlatformHelper::downloadFile(
     hasBeginCallback,
     hasProgressCallback
   );
+  jniEnv->DeleteLocalRef(jniCls);
   jniEnv->DeleteLocalRef(mapClass);
-  jniEnv->DeleteLocalRef(headersMap);
   jniEnv->DeleteLocalRef(headersMap);
 }
 
@@ -496,7 +542,7 @@ void RNFSTurboPlatformHelper::stopDownload(int jobId) {
   );
 
   jniEnv->CallVoidMethod(
-    jniCls,
+    jniObj,
     mid,
     jobId
   );
@@ -588,7 +634,7 @@ void RNFSTurboPlatformHelper::uploadFiles(
   }
 
   jniEnv->CallVoidMethod(
-    jniCls,
+    jniObj,
     mid,
     jobId,
     jniEnv->NewStringUTF(toUrl),
@@ -618,7 +664,7 @@ void RNFSTurboPlatformHelper::stopUpload(int jobId) {
   );
 
   jniEnv->CallVoidMethod(
-    jniCls,
+    jniObj,
     mid,
     jobId
   );
@@ -627,8 +673,8 @@ void RNFSTurboPlatformHelper::stopUpload(int jobId) {
 
 FSInfo RNFSTurboPlatformHelper::getFSInfo() {
   jclass jniCls = jniEnv->GetObjectClass(jniObj);
-  jmethodID mid = jniEnv->GetStaticMethodID(jniCls, "getFSInfo", "()[J");
-  jobject infoArr = jniEnv->CallObjectMethod(jniCls, mid);
+  jmethodID mid = jniEnv->GetMethodID(jniCls, "getFSInfo", "()[J");
+  jobject infoArr = jniEnv->CallObjectMethod(jniObj, mid);
   jlongArray *infoLongArr = reinterpret_cast<jlongArray*>(&infoArr);
   jlong* infoData = jniEnv->GetLongArrayElements(*infoLongArr, NULL);
 
@@ -640,8 +686,8 @@ FSInfo RNFSTurboPlatformHelper::getFSInfo() {
   };
 
   jniEnv->ReleaseLongArrayElements(*infoLongArr, infoData, 0);
-  jniEnv->DeleteLocalRef(infoArr);
   jniEnv->DeleteLocalRef(jniCls);
+  jniEnv->DeleteLocalRef(infoArr);
 
   return fsInfo;
 }
@@ -661,6 +707,7 @@ void RNFSTurboPlatformHelper::scanFile(int jobId, const char *path, RNFSTurboSca
     jobId,
     jniEnv->NewStringUTF(path)
   );
+  jniEnv->DeleteLocalRef(jniCls);
   if (jniEnv->ExceptionCheck()) {
     jniEnv->ExceptionClear();
     std::map<int, RNFSTurboScanCallback>::iterator it = RNFSTurboPlatformHelper::scanCallbacks.find(jobId);
@@ -669,7 +716,6 @@ void RNFSTurboPlatformHelper::scanFile(int jobId, const char *path, RNFSTurboSca
     }
     throw "Scan error";
   }
-  jniEnv->DeleteLocalRef(jniCls);
 }
 
 std::vector<std::string> RNFSTurboPlatformHelper::getAllExternalFilesDirs() {

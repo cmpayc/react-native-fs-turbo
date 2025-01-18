@@ -223,12 +223,15 @@ public class RNFSTurboPlatformHelper {
 
       params.onTaskCompleted = new RNFSTurboDownloadParams.OnTaskCompleted() {
         public void onTaskCompleted(RNFSTurboDownloadResult res) {
-          if (res.exception == null) {
-            downloadCompleteCallback(jobId, res.statusCode, (double)res.bytesWritten);
-          } else {
-            downloadErrorCallback(jobId, res.exception.toString());
+          RNFSTurboDownloader downloader = downloaders.get(jobId);
+          if (downloader != null) {
+            if (res.exception == null) {
+              downloadCompleteCallback(jobId, res.statusCode, (double)res.bytesWritten);
+            } else {
+              downloadErrorCallback(jobId, res.exception.toString());
+            }
+            downloaders.remove(jobId);
           }
-          downloaders.remove(jobId);
         }
       };
 
@@ -236,7 +239,10 @@ public class RNFSTurboPlatformHelper {
         params.onDownloadBegin = new RNFSTurboDownloadParams.OnDownloadBegin() {
           @Override
           public void onDownloadBegin(int statusCode, long contentLength, Map<String, String> headers) {
-            downloadBeginCallback(jobId, statusCode, (double)contentLength, new HashMap<String, String>(headers));
+            RNFSTurboDownloader downloader = downloaders.get(jobId);
+            if (downloader != null) {
+              downloadBeginCallback(jobId, statusCode, (double)contentLength, new HashMap<String, String>(headers));
+            }
           }
         };
       }
@@ -244,7 +250,10 @@ public class RNFSTurboPlatformHelper {
       if (hasProgressCallback) {
         params.onDownloadProgress = new RNFSTurboDownloadParams.OnDownloadProgress() {
           public void onDownloadProgress(long contentLength, long bytesWritten) {
-            downloadProgressCallback(jobId, (double)contentLength, (double)bytesWritten);
+            RNFSTurboDownloader downloader = downloaders.get(jobId);
+            if (downloader != null) {
+              downloadProgressCallback(jobId, (double)contentLength, (double)bytesWritten);
+            }
           }
         };
       }
