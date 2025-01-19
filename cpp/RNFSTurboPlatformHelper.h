@@ -58,7 +58,6 @@ struct DownloadCallbacks {
   RNFSTurboBeginDownloadCallback beginCallback;
   RNFSTurboProgressDownloadCallback progressCallback;
   RNFSTurboResumableDownloadCallback resumableCallback;
-  std::chrono::time_point<std::chrono::steady_clock> lastProgressCall{ std::chrono::steady_clock::now() };
 };
 
 struct UploadCallbacks {
@@ -66,7 +65,6 @@ struct UploadCallbacks {
   RNFSTurboErrorCallback errorCallback;
   RNFSTurboBeginUploadCallback beginCallback;
   RNFSTurboProgressUploadCallback progressCallback;
-  std::chrono::time_point<std::chrono::steady_clock> lastProgressCall{ std::chrono::steady_clock::now() };
 };
 
 class RNFSTurboPlatformHelper {

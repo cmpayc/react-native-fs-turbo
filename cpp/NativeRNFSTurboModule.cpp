@@ -11,12 +11,13 @@
 namespace facebook::react {
 
 NativeRNFSTurboModule::NativeRNFSTurboModule(std::shared_ptr<CallInvoker> jsInvoker)
-    : NativeRNFSTurboModuleCxxSpec(jsInvoker) {}
+    : NativeRNFSTurboModuleCxxSpec(std::move(jsInvoker)) {}
 
 NativeRNFSTurboModule::~NativeRNFSTurboModule() {}
 
 jsi::Object NativeRNFSTurboModule::createRNFSTurbo(jsi::Runtime& runtime) {
   auto instance = std::make_shared<RNFSTurboHostObject>();
+  instance->jsInvoker = jsInvoker_;
   return jsi::Object::createFromHostObject(runtime, instance);
 }
 

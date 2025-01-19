@@ -42,6 +42,7 @@ public:
 public:
   jsi::Value get(jsi::Runtime&, const jsi::PropNameID& name) override;
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime& rt) override;
+  std::shared_ptr<facebook::react::CallInvoker> jsInvoker;
 
 private:
   RNFSTurboPlatformHelper* platformHelper;
