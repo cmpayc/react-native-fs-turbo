@@ -36,7 +36,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
   std::string propName = propNameId.utf8(runtime);
 
   RNFSTurboLogger::log("RNFSTurbo", "call func %s...", propName.c_str());
-
+  
   if (propName == "stat") {
     return jsi::Function::createFromHostFunction(
       runtime, jsi::PropNameID::forAscii(runtime, propName),
@@ -1139,47 +1139,57 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         RNFSTurboPlatformHelper::jobId += 1;
         int jobId = RNFSTurboPlatformHelper::jobId;
         
-        RNFSTurboCompleteDownloadCallback completeCallback = [&runtime, completeFunc](int jobId, int statusCode, float bytesWritten) -> void {
-          jsi::Object result = jsi::Object(runtime);
-          result.setProperty(runtime, "jobId", jsi::Value(jobId));
-          result.setProperty(runtime, "statusCode", jsi::Value(statusCode));
-          result.setProperty(runtime, "bytesWritten", jsi::Value(bytesWritten));
-          completeFunc->call(runtime, std::move(result));
+        RNFSTurboCompleteDownloadCallback completeCallback = [&runtime, completeFunc, this](int jobId, int statusCode, float bytesWritten) -> void {
+          jsInvoker->invokeAsync([&runtime, completeFunc, jobId, statusCode, bytesWritten]() {
+            jsi::Object result = jsi::Object(runtime);
+            result.setProperty(runtime, "jobId", jsi::Value(jobId));
+            result.setProperty(runtime, "statusCode", jsi::Value(statusCode));
+            result.setProperty(runtime, "bytesWritten", jsi::Value(bytesWritten));
+            completeFunc->call(runtime, std::move(result));
+          });
         };
         
-        RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc](int jobId, const char* errorMessage) -> void {
-          errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", errorMessage)));
+        RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc, this](int jobId, const char* errorMessage) -> void {
+          jsInvoker->invokeAsync([&runtime, errorFunc, jobId, errorMessage]() {
+            errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", errorMessage)));
+          });
         };
         
         std::optional<RNFSTurboBeginDownloadCallback> beginCallback = std::nullopt;
         if (beginCallbackFunc) {
-          beginCallback = [&runtime, beginCallbackFunc](int jobId, int statusCode, float contentLength, std::map<std::string, std::string> headers) -> void {
-            jsi::Object result = jsi::Object(runtime);
-            result.setProperty(runtime, "jobId", jsi::Value(jobId));
-            result.setProperty(runtime, "statusCode", jsi::Value(statusCode));
-            result.setProperty(runtime, "contentLength", jsi::Value(contentLength));
-            jsi::Object jsHeaders = jsi::Object(runtime);
-            for (auto const& [key, val] : headers) {
-              jsHeaders.setProperty(runtime, key.c_str(), jsi::String::createFromUtf8(runtime, val));
-            }
-            result.setProperty(runtime, "headers", jsHeaders);
-            beginCallbackFunc->call(runtime, std::move(result));
+          beginCallback = [&runtime, beginCallbackFunc, this](int jobId, int statusCode, float contentLength, std::map<std::string, std::string> headers) -> void {
+            jsInvoker->invokeAsync([&runtime, beginCallbackFunc, jobId, statusCode, contentLength, headers]() {
+              jsi::Object result = jsi::Object(runtime);
+              result.setProperty(runtime, "jobId", jsi::Value(jobId));
+              result.setProperty(runtime, "statusCode", jsi::Value(statusCode));
+              result.setProperty(runtime, "contentLength", jsi::Value(contentLength));
+              jsi::Object jsHeaders = jsi::Object(runtime);
+              for (auto const& [key, val] : headers) {
+                jsHeaders.setProperty(runtime, key.c_str(), jsi::String::createFromUtf8(runtime, val));
+              }
+              result.setProperty(runtime, "headers", jsHeaders);
+              beginCallbackFunc->call(runtime, std::move(result));
+            });
           };
         }
         std::optional<RNFSTurboProgressDownloadCallback> progressCallback = std::nullopt;
         if (progressCallbackFunc) {
-          progressCallback = [&runtime, progressCallbackFunc](int jobId, float contentLength, float bytesWritten) -> void {
-            jsi::Object result = jsi::Object(runtime);
-            result.setProperty(runtime, "jobId", jsi::Value(jobId));
-            result.setProperty(runtime, "contentLength", jsi::Value(contentLength));
-            result.setProperty(runtime, "bytesWritten", jsi::Value(bytesWritten));
-            progressCallbackFunc->call(runtime, std::move(result));
+          progressCallback = [&runtime, progressCallbackFunc, this](int jobId, float contentLength, float bytesWritten) -> void {
+            jsInvoker->invokeAsync([&runtime, progressCallbackFunc, jobId, contentLength, bytesWritten]() {
+              jsi::Object result = jsi::Object(runtime);
+              result.setProperty(runtime, "jobId", jsi::Value(jobId));
+              result.setProperty(runtime, "contentLength", jsi::Value(contentLength));
+              result.setProperty(runtime, "bytesWritten", jsi::Value(bytesWritten));
+              progressCallbackFunc->call(runtime, std::move(result));
+            });
           };
         }
         std::optional<RNFSTurboResumableDownloadCallback> resumableCallback = std::nullopt;
         if (resumableCallbackFunc) {
-          resumableCallback = [&runtime, resumableCallbackFunc](int jobId) -> void {
-            resumableCallbackFunc->call(runtime, jsi::Value(jobId));
+          resumableCallback = [&runtime, resumableCallbackFunc, this](int jobId) -> void {
+            jsInvoker->invokeAsync([&runtime, resumableCallbackFunc, jobId]() {
+              resumableCallbackFunc->call(runtime, jsi::Value(jobId));
+            });
           };
         }
         
@@ -1428,26 +1438,32 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           completeFunc->call(runtime, std::move(result));
         };
         
-        RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc](int jobId, const char* errorMessage) -> void {
-          errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", errorMessage)));
+        RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc, this](int jobId, const char* errorMessage) -> void {
+          jsInvoker->invokeAsync([&runtime, errorFunc, errorMessage]() {
+            errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", errorMessage)));
+          });
         };
         
         std::optional<RNFSTurboBeginUploadCallback> beginCallback = std::nullopt;
         if (beginCallbackFunc) {
-          beginCallback = [&runtime, beginCallbackFunc](int jobId) -> void {
-            jsi::Object result = jsi::Object(runtime);
-            result.setProperty(runtime, "jobId", jsi::Value(jobId));
-            beginCallbackFunc->call(runtime, std::move(result));
+          beginCallback = [&runtime, beginCallbackFunc, this](int jobId) -> void {
+            jsInvoker->invokeAsync([&runtime, beginCallbackFunc, jobId]() {
+              jsi::Object result = jsi::Object(runtime);
+              result.setProperty(runtime, "jobId", jsi::Value(jobId));
+              beginCallbackFunc->call(runtime, std::move(result));
+            });
           };
         }
         std::optional<RNFSTurboProgressUploadCallback> progressCallback = std::nullopt;
         if (progressCallbackFunc) {
-          progressCallback = [&runtime, progressCallbackFunc](int jobId, float totalBytesExpectedToSend, float totalBytesSent) -> void {
-            jsi::Object result = jsi::Object(runtime);
-            result.setProperty(runtime, "jobId", jsi::Value(jobId));
-            result.setProperty(runtime, "totalBytesExpectedToSend", jsi::Value(totalBytesExpectedToSend));
-            result.setProperty(runtime, "totalBytesSent", jsi::Value(totalBytesSent));
-            progressCallbackFunc->call(runtime, std::move(result));
+          progressCallback = [&runtime, progressCallbackFunc, this](int jobId, float totalBytesExpectedToSend, float totalBytesSent) -> void {
+            jsInvoker->invokeAsync([&runtime, progressCallbackFunc, jobId, totalBytesExpectedToSend, totalBytesSent]() {
+              jsi::Object result = jsi::Object(runtime);
+              result.setProperty(runtime, "jobId", jsi::Value(jobId));
+              result.setProperty(runtime, "totalBytesExpectedToSend", jsi::Value(totalBytesExpectedToSend));
+              result.setProperty(runtime, "totalBytesSent", jsi::Value(totalBytesSent));
+              progressCallbackFunc->call(runtime, std::move(result));
+            });
           };
         }
         
@@ -1544,11 +1560,13 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         RNFSTurboPlatformHelper::jobId += 1;
         int jobId = RNFSTurboPlatformHelper::jobId;
 
-        RNFSTurboScanCallback scanCallback = [&runtime, scanFunc](int jobId, std::string path) -> void {
-          jsi::Object result = jsi::Object(runtime);
-          result.setProperty(runtime, "jobId", jsi::Value(jobId));
-          result.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, path));
-          scanFunc->call(runtime, std::move(result));
+        RNFSTurboScanCallback scanCallback = [&runtime, scanFunc, this](int jobId, std::string path) -> void {
+          jsInvoker->invokeAsync([&runtime, scanFunc, jobId, path]() {
+            jsi::Object result = jsi::Object(runtime);
+            result.setProperty(runtime, "jobId", jsi::Value(jobId));
+            result.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, path));
+            scanFunc->call(runtime, std::move(result));
+          });
         };
 
         try {
@@ -1556,10 +1574,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         } catch (const char* error_message) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "scanFile", error_message));
         }
+        return jsi::Value(jobId);
 #else
         throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "scanFile", "Command only for Android"));
 #endif
-        return jsi::Value::undefined();
       }
     );
   }

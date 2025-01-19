@@ -143,14 +143,6 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
 ) {
   std::map<int, DownloadCallbacks>::iterator it = RNFSTurboPlatformHelper::downloadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::downloadCallbacks.end()) {
-    const auto now = std::chrono::steady_clock::now();
-    const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-      now - RNFSTurboPlatformHelper::downloadCallbacks[jobId].lastProgressCall
-    ).count();
-    RNFSTurboPlatformHelper::downloadCallbacks[jobId].lastProgressCall = now - std::chrono::seconds(1);
-    if (elapsedTime < 50) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
     RNFSTurboPlatformHelper::downloadCallbacks[jobId].completeCallback(
       jobId,
       statusCode,
@@ -211,18 +203,11 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
 ) {
   std::map<int, DownloadCallbacks>::iterator it = RNFSTurboPlatformHelper::downloadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::downloadCallbacks.end()) {
-    const auto now = std::chrono::steady_clock::now();
-    const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-      now - RNFSTurboPlatformHelper::downloadCallbacks[jobId].lastProgressCall
-    ).count();
-    if (elapsedTime > 50) {
-      RNFSTurboPlatformHelper::downloadCallbacks[jobId].progressCallback(
-        jobId,
-        static_cast<float>(contentLength),
-        static_cast<float>(bytesWritten)
-      );
-      RNFSTurboPlatformHelper::downloadCallbacks[jobId].lastProgressCall = now;
-    }
+    RNFSTurboPlatformHelper::downloadCallbacks[jobId].progressCallback(
+      jobId,
+      static_cast<float>(contentLength),
+      static_cast<float>(bytesWritten)
+    );
   }
 }
 
@@ -237,12 +222,6 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_uploadC
 ) {
   std::map<int, UploadCallbacks>::iterator it = RNFSTurboPlatformHelper::uploadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::uploadCallbacks.end()) {
-    const auto now = std::chrono::steady_clock::now();
-    const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - RNFSTurboPlatformHelper::uploadCallbacks[jobId].lastProgressCall).count();
-    RNFSTurboPlatformHelper::uploadCallbacks[jobId].lastProgressCall = now - std::chrono::seconds(1);
-    if (elapsedTime < 50) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
     std::map<std::string, std::string> headers;
     JavaHashMapToStlStringStringMap(env, headersObj, headers);
     const char *body = env->GetStringUTFChars(bodyStr, nullptr);
@@ -276,18 +255,11 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_uploadP
 ) {
   std::map<int, UploadCallbacks>::iterator it = RNFSTurboPlatformHelper::uploadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::uploadCallbacks.end()) {
-    const auto now = std::chrono::steady_clock::now();
-    const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-      now - RNFSTurboPlatformHelper::uploadCallbacks[jobId].lastProgressCall
-    ).count();
-    if (elapsedTime > 50) {
-      RNFSTurboPlatformHelper::uploadCallbacks[jobId].progressCallback(
-        jobId,
-        static_cast<float>(totalBytesExpectedToSend),
-        static_cast<float>(totalBytesSent)
-      );
-      RNFSTurboPlatformHelper::uploadCallbacks[jobId].lastProgressCall = now;
-    }
+    RNFSTurboPlatformHelper::uploadCallbacks[jobId].progressCallback(
+      jobId,
+      static_cast<float>(totalBytesExpectedToSend),
+      static_cast<float>(totalBytesSent)
+    );
   }
 }
 
