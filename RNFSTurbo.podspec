@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.license         = package["license"]
   s.platforms       = { :ios => "12.4" }
   s.author          = package["author"]
-  s.source          = { :git => package["repository"], :tag => "#{s.version}" }
+  s.source          = { :git => "https://github.com/cmpayc/react-native-fs-turbo.git", :tag => "#{s.version}" }
   s.source_files = [
     "ios/**/*.{h,m,mm}",
     "cpp/**/*.{hpp,cpp,c,h}",
