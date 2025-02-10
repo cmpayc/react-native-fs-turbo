@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
   ]
   s.resource_bundles = { 'RNFS_PrivacyInfo' => 'ios/PrivacyInfo.xcprivacy' }
   s.compiler_flags = '-x objective-c++'
-  s.frameworks = 'Photos'
+  s.frameworks = 'Photos', 'AVFoundation'
   s.pod_target_xcconfig = {
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
   }
