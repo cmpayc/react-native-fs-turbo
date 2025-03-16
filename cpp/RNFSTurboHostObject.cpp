@@ -811,11 +811,26 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
       runtime, jsi::PropNameID::forAscii(runtime, propName),
       1,
       [this](jsi::Runtime& runtime, const jsi::Value& thisValue, const jsi::Value* arguments, size_t count) -> jsi::Value {
-        if (count != 1 || !arguments[0].isString()) [[unlikely]] {
+        if (count < 1 || !arguments[0].isString()) [[unlikely]] {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "unlink", "First argument ('filepath') has to be of type string"));
+        }
+        if (count > 2) [[unlikely]] {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "touch", "Too many arguments"));
         }
         
         std::string filePath = cleanPath(arguments[0].asString(runtime).utf8(runtime));
+        bool checkExistence{true};
+        if (count > 1 && arguments[1].isBool()) {
+          checkExistence = arguments[1].asBool();
+        }
+        
+        if (checkExistence) {
+          struct stat t_stat;
+          bool exists = stat(filePath.c_str(), &t_stat) >= 0;
+          if (!exists) {
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", "unlink", "No such file or directory", filePath.c_str()));
+          }
+        }
 
         try {
           fs::remove_all(filePath.c_str());
