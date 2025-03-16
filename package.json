@@ -1,6 +1,6 @@
 {
   "name": "react-native-fs-turbo",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "React-Native library for working with Android/iOS file system, written using JSI and C++ TurboModules",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
