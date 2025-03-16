@@ -100,9 +100,11 @@ std::vector<float> readFileFloat32(const char* filePath, int offset, int length)
   std::vector<float> vBuffer;
   inputFile.seekg(0, std::ios::end);
   size_t size = inputFile.tellg();
-  inputFile.seekg(0);
-  vBuffer.resize(std::floor(size / sizeof(float)));
-  inputFile.read(reinterpret_cast<char*> (&vBuffer[0]), size);
+  if (size >= 4) {
+    inputFile.seekg(0);
+    vBuffer.resize(std::floor(size / sizeof(float)));
+    inputFile.read(reinterpret_cast<char*> (&vBuffer[0]), size);
+  }
 
   inputFile.close();
 
