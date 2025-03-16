@@ -274,7 +274,7 @@ export interface RNFSTurboInterface {
     resizeMode?: string,
   ): string | undefined;
   copyAssetsVideoIOS(videoUri: string, destPath: string): string | undefined;
-  unlink(filepath: string): void;
+  unlink(filepath: string, checkExistence?: boolean): void;
   exists(filepath: string): boolean;
   existsAssets(filepath: string): boolean;
   existsRes(filepath: string): boolean;

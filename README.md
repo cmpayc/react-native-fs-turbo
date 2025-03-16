@@ -520,9 +520,10 @@ The promise will on success return the final destination of the file, as it was 
 
 Copies a video from assets-library, that is prefixed with 'assets-library://asset/asset.MOV?...' to a specific destination.
 
-### `unlink(filepath: string): void`
+### `unlink(filepath: string, checkExistence?: boolean = true): void`
 
 Unlinks the item at `filepath`. If the item does not exist, an error will be thrown.
+Second parameter `checkExistence` is optional and checks the existence of a file or folder before deleting it (if the file or folder doesn't exist, an error is thrown). By default, `checkExistence = true` for backward compatibility with `react-native-fs`
 
 Also recursively deletes directories (works like Linux `rm -rf`).
 

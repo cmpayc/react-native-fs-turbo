@@ -250,9 +250,9 @@ class RNFSTurbo implements RNFSTurboInterface {
     return func(videoUri, destPath);
   }
 
-  unlink(filepath: string): void {
+  unlink(filepath: string, checkExistence = true): void {
     const func = this.getFunctionFromCache("unlink");
-    return func(filepath);
+    return func(filepath, checkExistence);
   }
 
   exists(filepath: string): boolean {
