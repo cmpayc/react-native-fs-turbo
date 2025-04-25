@@ -1,7 +1,7 @@
-export type StatResult<S> = {
+export type StatResult<S, T extends Date | number> = {
   path: string; // The same as filepath argument
-  ctime: Date; // The creation date of the file
-  mtime: Date; // The last modified date of the file
+  ctime: T; // The creation date of the file (Date for old format, number (unixtime, sec) for new format)
+  mtime: T; // The last modified date of the file (Date for old format, number (unixtime, sec) for new format)
   size: number; // Size in bytes
   mode: number; // UNIX file mode
   originalFilepath: string; // ANDROID: In case of content uri this is the pointed file path, otherwise is the same as path
@@ -9,9 +9,9 @@ export type StatResult<S> = {
   isDirectory: S; // Is the file a directory?
 };
 
-export type ReadDirItem<S> = {
-  ctime: Date; // The creation date of the file (iOS only)
-  mtime: Date; // The last modified date of the file
+export type ReadDirItem<S, T extends Date | number> = {
+  ctime: T; // The creation date of the file (iOS only) (Date for old format, number (unixtime, sec) for new format)
+  mtime: T; // The last modified date of the file (Date for old format, number (unixtime, sec) for new format)
   name: string; // The name of the item
   path: string; // The absolute path to the item
   size: string; // Size in bytes
@@ -133,17 +133,17 @@ export type UploadErrorFunc = ((res: UploadError) => void) | undefined;
 
 export type ScanResultFunc = ((res: ScanResult) => void) | undefined;
 
-export type OverloadedStatResult<T extends boolean | undefined> = T extends
+export type OverloadedStatResult<S extends boolean | undefined> = S extends
   | false
   | undefined
-  ? StatResult<() => boolean>
-  : StatResult<boolean>;
+  ? StatResult<() => boolean, Date>
+  : StatResult<boolean, number>;
 
 export type OverloadedReadDirItem<T extends boolean | undefined> = T extends
   | false
   | undefined
-  ? ReadDirItem<() => boolean>
-  : ReadDirItem<boolean>;
+  ? ReadDirItem<() => boolean, Date>
+  : ReadDirItem<boolean, number>;
 
 export type OverloadedReadResult<T extends ReadOptions> = T extends
   | "uint8"
