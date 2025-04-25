@@ -227,8 +227,8 @@ The promise resolves with an object with the following properties:
 ```ts
 type StatResult = {
   path: string; // The same as filepath argument
-  ctime: Date; // The creation date of the file
-  mtime: Date; // The last modified date of the file
+  ctime: Date | number; // The creation date of the file (Date for old format, number (unixtime, sec) for new format)
+  mtime: Date | number; // The last modified date of the file (Date for old format, number (unixtime, sec) for new format)
   size: number; // Size in bytes
   mode: number; // UNIX file mode
   originalFilepath: string; // ANDROID: In case of content uri this is the pointed file path, otherwise is the same as path
@@ -236,6 +236,8 @@ type StatResult = {
   isDirectory: boolean | () => boolean; // Is the file a directory? Will be boolean if passed isNewFormat=true
 };
 ```
+
+Note: additional conversion of unixtime (number) to Date takes time, so number (unixtime, sec) is returned in the new format. For backward compatibility, the Date is returned in the old format.
 
 ### `readDir(dirpath: string, isNewFormat?: boolean): ReadDirItem[]`
 
@@ -245,8 +247,8 @@ The returned promise resolves with an array of objects with the following proper
 
 ```ts
 type ReadDirItem = {
-  ctime: Date; // The creation date of the file (iOS only)
-  mtime: Date; // The last modified date of the file
+  ctime: Date | number; // The creation date of the file (iOS only) (Date for old format, number (unixtime, sec) for new format)
+  mtime: Date | number; // The last modified date of the file (Date for old format, number (unixtime, sec) for new format)
   name: string; // The name of the item
   path: string; // The absolute path to the item
   size: string; // Size in bytes
@@ -254,6 +256,8 @@ type ReadDirItem = {
   isDirectory: boolean | () => boolean; // Is the file a directory? Will be boolean if passed isNewFormat=true
 };
 ```
+
+Note: additional conversion of unixtime (number) to Date takes time, so number (unixtime, sec) is returned in the new format. For backward compatibility, the Date is returned in the old format.
 
 ### (Android only) `readDirAssets(dirpath: string, isNewFormat?: boolean): ReadDirItem[]`
 

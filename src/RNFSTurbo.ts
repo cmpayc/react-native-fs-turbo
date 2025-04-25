@@ -107,7 +107,12 @@ class RNFSTurbo implements RNFSTurboInterface {
     isNewFormat?: T,
   ): OverloadedStatResult<T> {
     const func = this.getFunctionFromCache("stat");
-    return func(filepath, isNewFormat);
+    const result = func(filepath, isNewFormat);
+    if (!isNewFormat) {
+      result.ctime = new Date((result.ctime as number) * 1000);
+      result.mtime = new Date((result.mtime as number) * 1000);
+    }
+    return result;
   }
 
   readDir<T extends boolean | undefined = false>(
@@ -115,7 +120,15 @@ class RNFSTurbo implements RNFSTurboInterface {
     isNewFormat?: T,
   ): OverloadedReadDirItem<T>[] {
     const func = this.getFunctionFromCache("readDir");
-    return func(dirpath, isNewFormat);
+    const result = func(dirpath, isNewFormat);
+    if (!isNewFormat) {
+      return result.map((item) => ({
+        ...item,
+        ctime: new Date((item.ctime as number) * 1000),
+        mtime: new Date((item.mtime as number) * 1000),
+      }));
+    }
+    return result;
   }
 
   readDirAssets<T extends boolean | undefined = false>(
