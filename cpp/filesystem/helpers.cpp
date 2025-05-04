@@ -111,7 +111,7 @@ std::vector<float> readFileFloat32(const char* filePath, int offset, int length)
   return vBuffer;
 }
 
-void writeFile(const char* filePath, const char* content, bool isAppend) {
+void writeFile(const char* filePath, std::string_view content, bool isAppend) {
   std::ofstream outputFile(filePath, isAppend ? std::ios::ate|std::ios::app : std::ios::binary);
   if (!outputFile.is_open()) {
     throw strerror(errno);
@@ -144,7 +144,7 @@ void writeFileFloat32(const char* filePath, const float *contentFloat32, size_t 
   outputFile.close();
 }
 
-void writeWithOffset(const char* filePath, std::string content, int offset) {
+void writeWithOffset(const char* filePath, std::string_view content, int offset) {
   std::string fileData = readFile(filePath, 0, 0);
   if (offset > fileData.size()) {
     throw "Offset is greater then file size";
