@@ -318,29 +318,24 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           if (propName == "readFileAssets" || propName == "readFileRes") {
 #ifdef __ANDROID__
             std::string resultString = platformHelper->readFileAssetsOrRes(filePath.c_str(), propName == "readFileRes");
-            if (encoding == "base64") {
-              return jsi::String::createFromUtf8(runtime, base64::to_base64(resultString));
-            } else if (encoding == "ascii") {
-              return jsi::String::createFromAscii(runtime, resultString);
-            } else {
-              return jsi::String::createFromUtf8(runtime, resultString);
-            }
+            return encoding == "ascii"
+              ? jsi::String::createFromAscii(runtime, resultString)
+              : jsi::String::createFromUtf8(
+                  runtime,
+                  encoding == "base64" ? base64::to_base64(resultString) : resultString
+              );
 #endif
           } else {
-            if (encoding == "base64") {
-              std::string buffer = readFile(filePath.c_str(), offset, length);
-              jsi::String res = jsi::String::createFromUtf8(runtime, base64::to_base64(buffer));
-              return res;
-            } else if (encoding == "uint8") {
+            if (encoding == "uint8") {
               std::vector<unsigned char> buffer = readFileUint8(filePath.c_str(), offset, length);
               jsi::Array res = jsi::Array(runtime, buffer.size());
               int len = 0;
               for (const int i : buffer) {
                 res.setValueAtIndex(
-                                    runtime,
-                                    len,
-                                    jsi::Value(i)
-                                    );
+                  runtime,
+                  len,
+                  jsi::Value(i)
+                );
                 len++;
               }
               return res;
@@ -359,10 +354,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               return res;
             } else {
               std::string buffer = readFile(filePath.c_str(), offset, length);
-              jsi::String res = encoding == "ascii"
+              return encoding == "ascii"
                 ? jsi::String::createFromAscii(runtime, buffer)
-                : jsi::String::createFromUtf8(runtime, buffer);
-              return res;
+                : jsi::String::createFromUtf8(
+                    runtime,
+                    encoding == "base64" ? base64::to_base64(buffer) : buffer
+                );
             }
           }
         } catch (const char *error_message) {
@@ -370,6 +367,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         } catch (std::exception const& e) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), propName.c_str(), e.what()));
         }
+
         return jsi::Value::undefined();
       }
     );
@@ -442,11 +440,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         float *contentArrFloat32 = nullptr;
         int contentLength{0};
         if (encoding == "uint8" || encoding == "float32") {
-          jsi::Array jsiObj = arguments[1].asObject(runtime).asArray(runtime);
-          if (!jsiObj.isArray(runtime)) {
+          jsi::Array jsiArr = arguments[1].asObject(runtime).asArray(runtime);
+          if (!jsiArr.isArray(runtime)) {
             throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('content') has to be of type number[]"));
           }
-          jsi::Array jsiArr = arguments[1].asObject(runtime).asArray(runtime);
           if (encoding == "float32") {
             contentArrFloat32 = new float[jsiArr.size(runtime)];
             contentLength = jsiArr.size(runtime) * sizeof(float);
@@ -456,7 +453,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           }
           for (int i = 0; i < jsiArr.size(runtime); i++) {
             if (!jsiArr.getValueAtIndex(runtime, i).isNumber()) {
-              throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Second argument ('content') has to be of type number[]"));
+              throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Every element of content array has to be of type number"));
             }
             if (encoding == "float32") {
               contentArrFloat32[i] = (float) jsiArr.getValueAtIndex(runtime, i).asNumber();
@@ -466,24 +463,13 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           }
         } else {
           content = arguments[1].asString(runtime).utf8(runtime);
+          if (encoding == "base64") {
+            content = base64::from_base64(content);
+          }
         }
         
         try {
-          if (encoding == "base64") {
-            if (propName == "write" && offset > -1) {
-              writeWithOffset(
-                filePath.c_str(),
-                base64::from_base64(content),
-                offset
-              );
-            } else {
-              writeFile(
-                filePath.c_str(),
-                base64::from_base64(content).c_str(),
-                propName == "appendFile" || (propName == "write" && offset == -1)
-              );
-            }
-          } else if (encoding == "uint8") {
+          if (encoding == "uint8") {
             if (propName == "write" && offset > -1) {
               std::string replaceString = reinterpret_cast<char*>(contentArrUint8);
               writeWithOffset(filePath.c_str(), replaceString, offset);
@@ -517,7 +503,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             } else {
               writeFile(
                 filePath.c_str(),
-                content.c_str(),
+                content,
                 propName == "appendFile" || (propName == "write" && offset == -1)
               );
             }
@@ -535,6 +521,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), propName.c_str(), error_message));
         } catch (std::exception const& e) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", filePath.c_str(), propName.c_str(), e.what()));
+        }
+        if (contentArrUint8 != nullptr) {
+          delete[] contentArrUint8;
+        }
+        if (contentArrFloat32 != nullptr) {
+          delete[] contentArrFloat32;
         }
 
         return jsi::Value::undefined();

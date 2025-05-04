@@ -148,6 +148,9 @@ export type OverloadedReadDirItem<T extends boolean | undefined> = T extends
 export type OverloadedReadResult<T extends ReadOptions> = T extends
   | "uint8"
   | "float32"
+  | Partial<{
+      encoding: "uint8" | "float32";
+    }>
   ? number[]
   : string;
 
@@ -174,7 +177,12 @@ export type IOSProtectionTypes =
   | "NSFileProtectionCompleteUntilFirstUserAuthentication"
   | "NSFileProtectionCompleteWhenUserInactive";
 
-export type ReadOptions = EncodingType | { encoding: EncodingType } | undefined;
+export type ReadOptions =
+  | EncodingType
+  | {
+      encoding?: EncodingType;
+    }
+  | undefined;
 
 export type WriteOptions =
   | EncodingType
