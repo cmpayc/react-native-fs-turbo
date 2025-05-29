@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
     "ios/**/*.{h,m,mm}",
     "cpp/**/*.{hpp,cpp,c,h}",
   ]
-  s.resource_bundles = { 'RNFS_PrivacyInfo' => 'ios/PrivacyInfo.xcprivacy' }
+  s.resource_bundles = { 'RNFSTurbo_PrivacyInfo' => 'ios/PrivacyInfo.xcprivacy' }
   s.compiler_flags = '-x objective-c++'
   s.frameworks = 'Photos', 'AVFoundation'
   s.pod_target_xcconfig = {
