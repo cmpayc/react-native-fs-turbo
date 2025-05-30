@@ -60,6 +60,15 @@ yarn add react-native-fs-turbo
 cd ios && pod install
 ```
 
+### Android
+
+#### Proguard
+If you're using Proguard, make sure to add the following rule at proguard-rules.pro:
+
+```
+-keep class com.cmpayc.rnfsturbo.** { *; }
+```
+
 ## Usage
 
 ### Import
