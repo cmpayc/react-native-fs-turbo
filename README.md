@@ -1,16 +1,18 @@
 ## react-native-fs-turbo
 
 * This library repeats all the methods of the original [react-native-fs](https://github.com/itinance/react-native-fs) but all the code is executed synchronously in C++ files via JSI (and JNI) and written using TypeScript.
+* New methods for working with files have also been added, including AES256 encryption (disabled by default)
 
 > [!IMPORTANT]
-> `react-native-fs-turbo` is a pure C++ TurboModule, and **requires the new architecture to be enabled**. (react-native 0.74+)
+> `react-native-fs-turbo` is a pure C++ TurboModule, and **requires the new architecture to be enabled**. (react-native 0.75+)
 > - If you want to use `react-native-fs-turbo`, you need to enable the new architecture in your app (see ["Enable the New Architecture for Apps"](https://github.com/reactwg/react-native-new-architecture/blob/main/docs/enable-apps.md))
 > - If you cannot use the new architecture yet, use the standard [react-native-fs](https://github.com/itinance/react-native-fs) library.
+> - React-Native version 0.74 is no longer supported. Use the `0.3.7` library version. (`"react-native-fs-turbo": "0.3.7")
 
 ## Benchmark
 
 <details open>
-<summary>Benchmark tests of <b>react-native-fs-turbo</b> and <b>react-native-fs</b> libraries (iPhone 14, Samsung Galaxy Note 20 Ultra, release mode, 10,000 iterations)</summary>
+<summary>Benchmark tests of <b>react-native-fs-turbo</b> and <b>react-native-fs</b> libraries (React-Native 0.82.0, iPhone 12 Pro (iOS 18.6.2), Samsung Galaxy Note 20 Ultra (Android 13), release mode, 10,000 iterations)</summary>
 <br>
 Conducted 10 tests, showed average time (only basic functions tested)
 <br>
@@ -21,32 +23,50 @@ Conducted 10 tests, showed average time (only basic functions tested)
 <b>readDir</b> test checked reading of 10,000 files in a folder
 <br>
 
-| Library                             | writeFile     | appendFile     |  stat          | unlink        |
-| ----------------------------------- | ------------- | -------------- | -------------- | ------------- |
-| react-native-fs (ios, serial)       | 7.855s        | 2.683s         | 1.595s         | 1.728s        |
-| react-native-fs (ios, parallel)     | 7.596s        | 2.719s         | 1.234s         | 1.480s        |
-| react-native-fs-turbo (ios)         | 4.849s (^1.6) | 1.986s (^1.4)  | 0.267s (^4.6)  | 0.634s (^2.3) |
-| react-native-fs (android, serial)   | 8.764s        | 6.320s         | 4.821s         | 4.307s        |
-| react-native-fs (android, parallel) | 3.505s        | 2.856s         | 0.947s         | 0.892s        |
-| react-native-fs-turbo (android)     | 0.551s (^6.3) | 0.199s (^14.4) | 0.093s (^10.2) | 0.251s (^3.6) |
+#### Basic functions
 
-| Library                             | readFile (utf8) | readFile (base64) |
-| ----------------------------------- | --------------- | ----------------- |
-| react-native-fs (ios, serial)       | 4.082s          | 3.058s            |
-| react-native-fs (ios, parallel)     | 3.020s          | 2.738s            |
-| react-native-fs-turbo (ios)         | 1.525s (^2.0)   | 1.617s (^1.7)     |
-| react-native-fs (android, serial)   | 10.533s         | 4.735s            |
-| react-native-fs (android, parallel) | 1.944s          | 0.928s            |
-| react-native-fs-turbo (android)     | 0.209s (^9.3)   | 0.213s (^4.4)     |
+| Library                             | writeFile     | appendFile     |  writeFile (100Mb, 1 iter) |
+| ----------------------------------- | ------------- | -------------- | -------------------------- |
+| react-native-fs (ios, serial)       | 9.793s        | 3.424s         | 58.608s                    |
+| react-native-fs (ios, parallel)     | 9.251s        | 2.911s         | --                         |
+| react-native-fs-turbo (ios)         | 6.254s (^1.5) | 1.836s (^1.6)  | 0.192s (^305)              |
+| react-native-fs (android, serial)   | 8.309s        | 5.571s         | Crash (10Mb - 6.989s)      |
+| react-native-fs (android, parallel) | 1.655s        | 1.092s         | --                         |
+| react-native-fs-turbo (android)     | 0.701s (^2.3) | 0.266s (^4.1)  | 3.510s (^20)               |
+
+| Library                             | readFile (utf8) | readFile (base64) | readFile (100Mb, 1 iter) |
+| ----------------------------------- | --------------- | ----------------- | ------------------------ |
+| react-native-fs (ios, serial)       | 5.347s          | 4.385s            | 120.863s                 |
+| react-native-fs (ios, parallel)     | 4.590s          | 4.202s            | --                       |
+| react-native-fs-turbo (ios)         | 1.578s (^2.9)   | 1.597s (^2.6)     | 0.073s (^1655)           |
+| react-native-fs (android, serial)   | 9.067s          | 3.932s            | Crash (10Mb - 13.758s)   |
+| react-native-fs (android, parallel) | 2.438s          | 0.984s            | --                       |
+| react-native-fs-turbo (android)     | 0.283s (^8.6)   | 0.284s (^3.4)     | 0.204 (^674)             |
+
+| Library                             |  stat          | unlink        |
+| ----------------------------------- | -------------- | ------------- |
+| react-native-fs (ios, serial)       | 2.542s         | 2.607s        |
+| react-native-fs (ios, parallel)     | 2.332s         | 2.421s        |
+| react-native-fs-turbo (ios)         | 0.538s (^4.3)  | 1.475s (^1.6) |
+| react-native-fs (android, serial)   | 4.132s         | 5.691s        |
+| react-native-fs (android, parallel) | 1.087s         | 1.456s        |
+| react-native-fs-turbo (android)     | 0.159s (^6.8)  | 0.401s (^3.6) |
 
 | Library                             | hash (md5)    | hash (sha512) | readDir       |
 | ----------------------------------- | ------------- | ------------- | ------------- |
-| react-native-fs (ios, serial)       | 3.073s        | 6.297s        | 1.077s        |
-| react-native-fs (ios, parallel)     | 2.675s        | 5.437s        | 1.059s        |
-| react-native-fs-turbo (ios)         | 1.541 (^1.7)  | 3.146s (^1.7) | 0.269s (^3.9) |
-| react-native-fs (android, serial)   | 5.218s        | 12.247s       | 0.303s        |
-| react-native-fs (android, parallel) | 1.386s        | 3.525s        | 0.308s        |
-| react-native-fs-turbo (android)     | 0.231s (^6.0) | 0.501s (^7.0) | 0.081s (^3.8) |
+| react-native-fs (ios, serial)       | 4.452s        | 9.040s        | 2.181s        |
+| react-native-fs (ios, parallel)     | 4.216s        | 8.602s        | 2.154s        |
+| react-native-fs-turbo (ios)         | 1.616s (^2.6) | 3.271s (^2.6) | 0.447s (^4.8) |
+| react-native-fs (android, serial)   | 4.124s        | 9.609s        | 0.303s        |
+| react-native-fs (android, parallel) | 1.696s        | 4.560s        | 0.407s        |
+| react-native-fs-turbo (android)     | 0.301s (^5.6) | 0.640s (^7.1) | 0.083s (^4.9) |
+
+#### AES256 Encryption (extra)
+
+| Library                             | readFile (cbc) | writeFile (cbc) |
+| ----------------------------------- | -------------- | --------------- |
+| react-native-fs-turbo (ios)         | 1.602s         | 6.515s          |
+| react-native-fs-turbo (android)     | 0.406s         | 2.215s          |
 
 </details>
 
@@ -67,6 +87,32 @@ If you're using Proguard, make sure to add the following rule at proguard-rules.
 
 ```
 -keep class com.cmpayc.rnfsturbo.** { *; }
+```
+
+### AES256 Encryption (disabled by default)
+To enable AES256 encryption methods, you need to add encryption flags to Android and iOS builds.
+
+#### iOS
+Add a new strings to `ios/Podfile` file to `post_install` section
+
+```ruby
+  post_install do |installer|
+    ...
+    installer.pods_project.targets.each do |target|
+      if target.name == 'RNFSTurbo'
+        target.build_configurations.each do |config|
+          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)', 'RNFSTURBO_USE_ENCRYPTION=1']
+        end
+      end
+    end
+  end
+```
+
+#### Android
+Add a new string to `android/gradle.properties` file
+
+```
+rnFsTurboUseEncryption=true
 ```
 
 ## Usage
@@ -208,6 +254,33 @@ const uploadJob = RNFSTurbo.uploadFiles(
 console.log('Upload job id', uploadJob.jobId);
 ```
 
+#### Encryption (extra)
+
+```ts
+const aesKey = '29f4734849a0ee82fd9fd56e9cc4d163';
+
+RNFSTurbo.writeFile(
+  `${RNFSTurbo.DocumentDirectoryPath}/encrypted.txt`,
+  'Hello world!',
+  {
+    encrypted: true,
+    passphrase: aesKey,
+    mode: 'ecb',
+  },
+);
+
+const decrypted = RNFSTurbo.readFile(
+  `${RNFSTurbo.DocumentDirectoryPath}/encrypted.txt`,
+  {
+    encrypted: true,
+    passphrase: aesKey,
+    mode: 'ecb',
+  },
+);
+
+console.log('Decrypted data', decrypted);
+```
+
 ## API
 
 ### Constants
@@ -298,7 +371,15 @@ Reads the file at `path` and return contents. `options` can be string of encrypt
 ```ts
 type ReadOptions =
   | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
-  | { encoding: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32' };
+  | {
+      encoding: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'.
+      // Next flags will work only if encryption is enabled
+      encrypted?: boolean;
+      passphrase?: string | number[];
+      iv?: string | number[];
+      mode?: "ecb" | "cbc" | "cfb";
+      padding?: "ansi_x9.23" | "iso/iec_7816-4" | "pkcs5/pkcs7" | "zero" | "no";
+    };
 ```
 
 Note: you will take quite a performance hit if you are reading big files
@@ -315,6 +396,7 @@ type ReadOptions =
 
 Note: reading big files piece by piece using this method may be useful in terms of performance.
 Note: `float32` size is 4 bytes, so `position` and `length` should be specified in bytes (multiplied by 4)
+Note: encryption doesn't work for partial file reading
 
 ### (Android only) `readFileAssets(filepath: string, options?: ReadOptions) => string[]`
 
@@ -352,7 +434,13 @@ type WriteOptions =
         | "NSFileProtectionComplete"
         | "NSFileProtectionCompleteUnlessOpen"
         | "NSFileProtectionCompleteUntilFirstUserAuthentication"
-        | "NSFileProtectionCompleteWhenUserInactive" // iOS 17+ only
+        | "NSFileProtectionCompleteWhenUserInactive" // iOS 17+ only,
+      // Next flags will work only if encryption is enabled
+      encrypted?: boolean;
+      passphrase?: string | number[];
+      iv?: string | number[];
+      mode?: "ecb" | "cbc" | "cfb";
+      padding?: "ansi_x9.23" | "iso/iec_7816-4" | "pkcs5/pkcs7" | "zero" | "no";
     };
 ```
 
@@ -376,6 +464,8 @@ type WriteOptions =
     };
 ```
 
+Note: encryption doesn't work for to partially write a file
+
 (IOS only): `options.NSFileProtectionKey` property can be provided to set this attribute on iOS platforms.
 
 ### `write(filepath: string, contents: string | number[], position?: number, options?: WriteOptions): void`
@@ -397,6 +487,7 @@ type WriteOptions =
 ```
 
 Note: `float32` size is 4 bytes, so `position` should be specified in bytes (multiplied by 4)
+Note: encryption doesn't work for to partially write a file
 
 (IOS only): `options.NSFileProtectionKey` property can be provided to set this attribute on iOS platforms.
 
@@ -711,6 +802,7 @@ type FSInfoResult = {
   freeSpace: number; // The amount of available storage space on the device (in bytes).
   totalSpaceEx?: number; // The amount of available external storage space on the device (in bytes) (android only)
   freeSpaceEx?: number; // The amount of available external storage space on the device (in bytes) (android only)
+  encryptionEnabled: boolean; // Check if encryption is enabled in the RNFSTurbo library
 };
 ```
 

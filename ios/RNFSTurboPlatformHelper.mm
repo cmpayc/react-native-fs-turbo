@@ -22,6 +22,8 @@ Modified by Sergei Kazakov on 31.10.24.
 #import "RNFSTurboUploader.h"
 #import "RNFSTurboPlatformHelper.h"
 
+namespace cmpayc::rnfsturbo {
+
 RNFSTurboPlatformHelper::RNFSTurboPlatformHelper() {}
 
 void RNFSTurboPlatformHelper::copyAssetsFileIOS(const char* imageUri, const char* destPath, int width, int height, float scale, float compression, const char* resizeMode) {
@@ -423,4 +425,6 @@ void RNFSTurboPlatformHelper::setResourceValue(
     BOOL isExclude = [value isEqualToString:@"YES"];
     [nsFileUrl setResourceValue:@(isExclude) forKey:NSURLIsExcludedFromBackupKey error:nil];
   }
+}
+
 }

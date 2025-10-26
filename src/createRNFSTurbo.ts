@@ -10,9 +10,11 @@ export const createRNFSTurbo = (): {
 } => {
   const { configuration, module } = getRNFSTurboModule();
 
-  const instance = module.createRNFSTurbo() as RNFSTurboInterface;
+  const isCreated = module.createRNFSTurbo();
+
+  const instance = global.RNFSTurboProxy as RNFSTurboInterface;
   if (__DEV__) {
-    if (typeof instance !== "object" || instance == null) {
+    if (!isCreated || typeof instance !== "object" || instance == null) {
       throw new Error(
         "Failed to create RNFSTurbo instance - an unknown object was returned by createRNFSTurbo(..)!",
       );

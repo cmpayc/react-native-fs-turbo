@@ -5,8 +5,13 @@ buildscript {
   }
 
   dependencies {
-    classpath "com.android.tools.build:gradle:7.2.1"
+    classpath "com.android.tools.build:gradle:8.13.0"
   }
+}
+
+def reactNativeArchitectures() {
+  def value = rootProject.getProperties().get("reactNativeArchitectures")
+  return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
 }
 
 def isNewArchitectureEnabled() {
@@ -26,6 +31,12 @@ def getExtOrDefault(name) {
 def getExtOrIntegerDefault(name) {
   return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["RNFSTurbo_" + name]).toInteger()
 }
+
+def getExtOrBooleanDefault(name) {
+  return Boolean.parseBoolean(getExtOrDefault(name))
+}
+
+def useEncryption = getExtOrBooleanDefault("rnFsTurboUseEncryption")
 
 def supportsNamespace() {
   def parsed = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION.tokenize('.')
@@ -54,10 +65,65 @@ android {
     minSdkVersion getExtOrIntegerDefault("minSdkVersion")
     targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
+
+    externalNativeBuild {
+      cmake {
+        cppFlags "-frtti -fexceptions -fstack-protector-all"
+        arguments "-DANDROID_STL=c++_shared"
+        if (useEncryption) {
+            arguments.add("-DRNFSTURBO_USE_ENCRYPTION=1")
+        }
+        abiFilters (*reactNativeArchitectures())
+
+        buildTypes {
+          debug {
+            cppFlags "-O1 -g"
+          }
+          release {
+            cppFlags "-O2"
+          }
+        }
+      }
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path "CMakeLists.txt"
+    }
   }
 
   buildFeatures {
     buildConfig true
+    prefab true
+    prefabPublishing true
+  }
+
+  packagingOptions {
+    excludes = [
+            "META-INF",
+            "META-INF/**",
+            "**/libc++_shared.so",
+            "**/libfbjni.so",
+            "**/libjsi.so",
+            "**/libfolly_json.so",
+            "**/libfolly_runtime.so",
+            "**/libglog.so",
+            "**/libhermes.so",
+            "**/libhermes-executor-debug.so",
+            "**/libhermes_executor.so",
+            "**/libreactnative.so",
+            "**/libreactnativejni.so",
+            "**/libturbomodulejsijni.so",
+            "**/libreact_nativemodule_core.so",
+            "**/libjscexecutor.so"
+    ]
+  }
+
+  prefab {
+    RNFSTurbo {
+      headers "${project.buildDir}/headers/rnfsturbo/"
+    }
   }
 
   buildTypes {
@@ -79,8 +145,9 @@ android {
     main {
       if (isNewArchitectureEnabled()) {
           java.srcDirs += [
-            // This is needed to build Kotlin project with NewArch enabled
-            "${project.buildDir}/generated/source/codegen/java"
+            // This is needed to build a project with NewArch enabled
+            "${project.buildDir}/generated/source/codegen/java",
+            "src/main/codegen"
           ]
       }
     }
@@ -104,3 +171,13 @@ if (isNewArchitectureEnabled()) {
     codegenJavaPackageName = "com.cmpayc.rnfsturbo"
   }
 }
+
+tasks.register('prepareHeaders', Copy) {
+  from fileTree('./src/main/cpp').filter { it.isFile() }
+  from fileTree('../cpp/').filter { it.isFile() }
+  include "*.h"
+  into "${project.buildDir}/headers/rnfsturbo/RNFSTurbo/"
+  includeEmptyDirs = false
+}
+
+preBuild.dependsOn(prepareHeaders)

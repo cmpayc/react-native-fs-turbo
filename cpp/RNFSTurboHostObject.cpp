@@ -8,11 +8,14 @@
 #include "RNFSTurboHostObject.h"
 #include "RNFSTurboLogger.h"
 
+namespace cmpayc::rnfsturbo {
+
 using namespace facebook;
 namespace fs = std::filesystem;
  
-RNFSTurboHostObject::RNFSTurboHostObject() {
+RNFSTurboHostObject::RNFSTurboHostObject(std::shared_ptr<react::CallInvoker> jsInvoker) {
   RNFSTurboLogger::log("RNFSTurbo", "Initializing RNFSTurbo");
+  _jsInvoker = jsInvoker;
 #ifdef __ANDROID__
   JNIEnv *env = facebook::jni::Environment::current();
   platformHelper = new RNFSTurboPlatformHelper(env);
@@ -286,6 +289,15 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           offset = arguments[2].asNumber();
         }
         std::string encoding{"utf8"};
+#ifdef RNFSTURBO_USE_ENCRYPTION
+        bool encrypted{false};
+        int passphraseLength{0};
+        int ivLength{0};
+        std::vector<unsigned char> passphrase;
+        std::vector<unsigned char> iv;
+        std::string mode{"ecb"};
+        std::string padding{"pkcs5/pkcs7"};
+#endif
         int optionsIndex{-1};
         bool optionsIsObject{false};
         if (propName == "read" && count == 4 && arguments[3].isString()) {
@@ -309,10 +321,29 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               encoding = encodingOption.asString(runtime).utf8(runtime);
             }
           }
+#ifdef RNFSTURBO_USE_ENCRYPTION
+          processEncryptionOptions(
+            runtime,
+            propName,
+            optionsObject,
+            encrypted,
+            passphraseLength,
+            passphrase,
+            ivLength,
+            iv,
+            mode,
+            padding
+          );
+#endif
         }
         if (encoding != "utf8" && encoding != "base64" && encoding != "uint8" && encoding != "float32" && encoding != "ascii") {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", propName.c_str(), "Wrong encoding", encoding.c_str()));
         }
+#ifdef RNFSTURBO_USE_ENCRYPTION
+        if (encrypted && passphraseLength == 0) {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Passphrase is required for encryption"));
+        }
+#endif
 
         try {
           if (propName == "readFileAssets" || propName == "readFileRes") {
@@ -354,12 +385,43 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               return res;
             } else {
               std::string buffer = readFile(filePath.c_str(), offset, length);
-              return encoding == "ascii"
-                ? jsi::String::createFromAscii(runtime, buffer)
-                : jsi::String::createFromUtf8(
-                    runtime,
-                    encoding == "base64" ? base64::to_base64(buffer) : buffer
+#ifdef RNFSTURBO_USE_ENCRYPTION
+              if (encrypted) {
+                auto krypt = createCipherMode(
+                  runtime,
+                  propName,
+                  mode,
+                  padding,
+                  passphrase.data(),
+                  passphrase.size()
                 );
+                ByteArray decryptedBytes = krypt->decrypt(
+                  reinterpret_cast<unsigned char*>(buffer.data()),
+                  buffer.size(),
+                  iv.data()
+                );
+
+                std::string decryptedContent(
+                  reinterpret_cast<const char*>(decryptedBytes.array),
+                  decryptedBytes.length
+                );
+                return encoding == "ascii"
+                  ? jsi::String::createFromAscii(runtime, decryptedContent)
+                  : jsi::String::createFromUtf8(
+                      runtime,
+                      encoding == "base64" ? base64::to_base64(decryptedContent) : decryptedContent
+                  );
+              } else {
+#endif
+                return encoding == "ascii"
+                  ? jsi::String::createFromAscii(runtime, buffer)
+                  : jsi::String::createFromUtf8(
+                      runtime,
+                      encoding == "base64" ? base64::to_base64(buffer) : buffer
+                  );
+#ifdef RNFSTURBO_USE_ENCRYPTION
+              }
+#endif
             }
           }
         } catch (const char *error_message) {
@@ -384,6 +446,15 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         std::map<std::string, std::string> options;
         int optionsIndex{-1};
         bool optionsIsObject{false};
+#ifdef RNFSTURBO_USE_ENCRYPTION
+        bool encrypted{false};
+        std::string mode{"ecb"};
+        std::string padding{"pkcs5/pkcs7"};
+        int passphraseLength{0};
+        int ivLength{0};
+        std::vector<unsigned char> passphrase;
+        std::vector<unsigned char> iv;
+#endif
         if (propName == "write" && count == 4 && arguments[3].isString()) {
           optionsIndex = 3;
         } else if (propName != "write" && count == 3 && arguments[2].isString()) {
@@ -405,6 +476,20 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               encoding = encodingOption.asString(runtime).utf8(runtime);
             }
           }
+#ifdef RNFSTURBO_USE_ENCRYPTION
+          processEncryptionOptions(
+            runtime,
+            propName,
+            optionsObject,
+            encrypted,
+            passphraseLength,
+            passphrase,
+            ivLength,
+            iv,
+            mode,
+            padding
+          );
+#endif
 #ifdef __APPLE__
           if (optionsObject.hasProperty(runtime, "NSFileProtectionKey")) {
             auto protectionOption = optionsObject.getProperty(runtime, "NSFileProtectionKey");
@@ -425,6 +510,11 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         if ((propName == "write" && count > 4) || (propName != "write" && count > 3)) [[unlikely]] {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Too many arguments"));
         }
+#ifdef RNFSTURBO_USE_ENCRYPTION
+        if (encrypted && passphraseLength == 0) {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Passphrase is required for encryption"));
+        }
+#endif
         int offset{-1};
         if (propName == "write" && count > 2 && arguments[2].isNumber()) {
           offset = arguments[2].asNumber();
@@ -500,6 +590,32 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
                 content,
                 offset
               );
+#ifdef RNFSTURBO_USE_ENCRYPTION
+            } else if (encrypted) {
+              auto krypt = createCipherMode(
+                runtime,
+                propName,
+                mode,
+                padding,
+                passphrase.data(),
+                passphrase.size()
+              );
+              ByteArray cipher = krypt->encrypt(
+                reinterpret_cast<unsigned char*>(content.data()),
+                content.size(),
+                iv.data()
+              );
+              
+              std::string encryptedContent(
+                reinterpret_cast<const char*>(cipher.array),
+                cipher.length
+              );
+              writeFile(
+                filePath.c_str(),
+                encryptedContent,
+                propName == "appendFile" || (propName == "write" && offset == -1)
+              );
+#endif
             } else {
               writeFile(
                 filePath.c_str(),
@@ -1147,7 +1263,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         int jobId = RNFSTurboPlatformHelper::jobId;
         
         RNFSTurboCompleteDownloadCallback completeCallback = [&runtime, completeFunc, this](int jobId, int statusCode, float bytesWritten) -> void {
-          jsInvoker->invokeAsync([&runtime, completeFunc, jobId, statusCode, bytesWritten]() {
+          _jsInvoker->invokeAsync([&runtime, completeFunc, jobId, statusCode, bytesWritten]() {
             jsi::Object result = jsi::Object(runtime);
             result.setProperty(runtime, "jobId", jsi::Value(jobId));
             result.setProperty(runtime, "statusCode", jsi::Value(statusCode));
@@ -1157,7 +1273,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         };
         
         RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc, this](int jobId, const char* errorMessage) -> void {
-          jsInvoker->invokeAsync([&runtime, errorFunc, jobId, errorMessage]() {
+          _jsInvoker->invokeAsync([&runtime, errorFunc, jobId, errorMessage]() {
             errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", errorMessage)));
           });
         };
@@ -1165,7 +1281,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         std::optional<RNFSTurboBeginDownloadCallback> beginCallback = std::nullopt;
         if (beginCallbackFunc) {
           beginCallback = [&runtime, beginCallbackFunc, this](int jobId, int statusCode, float contentLength, std::map<std::string, std::string> headers) -> void {
-            jsInvoker->invokeAsync([&runtime, beginCallbackFunc, jobId, statusCode, contentLength, headers]() {
+            _jsInvoker->invokeAsync([&runtime, beginCallbackFunc, jobId, statusCode, contentLength, headers]() {
               jsi::Object result = jsi::Object(runtime);
               result.setProperty(runtime, "jobId", jsi::Value(jobId));
               result.setProperty(runtime, "statusCode", jsi::Value(statusCode));
@@ -1182,7 +1298,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         std::optional<RNFSTurboProgressDownloadCallback> progressCallback = std::nullopt;
         if (progressCallbackFunc) {
           progressCallback = [&runtime, progressCallbackFunc, this](int jobId, float contentLength, float bytesWritten) -> void {
-            jsInvoker->invokeAsync([&runtime, progressCallbackFunc, jobId, contentLength, bytesWritten]() {
+            _jsInvoker->invokeAsync([&runtime, progressCallbackFunc, jobId, contentLength, bytesWritten]() {
               jsi::Object result = jsi::Object(runtime);
               result.setProperty(runtime, "jobId", jsi::Value(jobId));
               result.setProperty(runtime, "contentLength", jsi::Value(contentLength));
@@ -1194,7 +1310,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         std::optional<RNFSTurboResumableDownloadCallback> resumableCallback = std::nullopt;
         if (resumableCallbackFunc) {
           resumableCallback = [&runtime, resumableCallbackFunc, this](int jobId) -> void {
-            jsInvoker->invokeAsync([&runtime, resumableCallbackFunc, jobId]() {
+            _jsInvoker->invokeAsync([&runtime, resumableCallbackFunc, jobId]() {
               resumableCallbackFunc->call(runtime, jsi::Value(jobId));
             });
           };
@@ -1446,7 +1562,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         };
         
         RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc, this](int jobId, const char* errorMessage) -> void {
-          jsInvoker->invokeAsync([&runtime, errorFunc, errorMessage]() {
+          _jsInvoker->invokeAsync([&runtime, errorFunc, errorMessage]() {
             errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", errorMessage)));
           });
         };
@@ -1454,7 +1570,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         std::optional<RNFSTurboBeginUploadCallback> beginCallback = std::nullopt;
         if (beginCallbackFunc) {
           beginCallback = [&runtime, beginCallbackFunc, this](int jobId) -> void {
-            jsInvoker->invokeAsync([&runtime, beginCallbackFunc, jobId]() {
+            _jsInvoker->invokeAsync([&runtime, beginCallbackFunc, jobId]() {
               jsi::Object result = jsi::Object(runtime);
               result.setProperty(runtime, "jobId", jsi::Value(jobId));
               beginCallbackFunc->call(runtime, std::move(result));
@@ -1464,7 +1580,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         std::optional<RNFSTurboProgressUploadCallback> progressCallback = std::nullopt;
         if (progressCallbackFunc) {
           progressCallback = [&runtime, progressCallbackFunc, this](int jobId, float totalBytesExpectedToSend, float totalBytesSent) -> void {
-            jsInvoker->invokeAsync([&runtime, progressCallbackFunc, jobId, totalBytesExpectedToSend, totalBytesSent]() {
+            _jsInvoker->invokeAsync([&runtime, progressCallbackFunc, jobId, totalBytesExpectedToSend, totalBytesSent]() {
               jsi::Object result = jsi::Object(runtime);
               result.setProperty(runtime, "jobId", jsi::Value(jobId));
               result.setProperty(runtime, "totalBytesExpectedToSend", jsi::Value(totalBytesExpectedToSend));
@@ -1535,6 +1651,11 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           if (fsInfo.freeSpaceEx.has_value()) {
             result.setProperty(runtime, "freeSpaceEx", jsi::Value(static_cast<float>(fsInfo.freeSpaceEx.value())));
           }
+#ifdef RNFSTURBO_USE_ENCRYPTION
+          result.setProperty(runtime, "encryptionEnabled", jsi::Value(true));
+#else
+          result.setProperty(runtime, "encryptionEnabled", jsi::Value(false));
+#endif
           
           return result;
         } catch (const char* error_message) {
@@ -1568,7 +1689,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         int jobId = RNFSTurboPlatformHelper::jobId;
 
         RNFSTurboScanCallback scanCallback = [&runtime, scanFunc, this](int jobId, std::string path) -> void {
-          jsInvoker->invokeAsync([&runtime, scanFunc, jobId, path]() {
+          _jsInvoker->invokeAsync([&runtime, scanFunc, jobId, path]() {
             jsi::Object result = jsi::Object(runtime);
             result.setProperty(runtime, "jobId", jsi::Value(jobId));
             result.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, path));
@@ -1656,4 +1777,6 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
   }
 
   return jsi::Value::undefined();
+}
+
 }

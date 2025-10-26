@@ -5,7 +5,9 @@
 //  Created by Sergei Kazakov on 16.09.24.
 //
 
-#include "helpers.h"
+#include "filesystem-utils.h"
+
+namespace cmpayc::rnfsturbo {
 
 std::string readFile(const char* filePath, int offset, int length) {
   std::ifstream inputFile(filePath, std::ios::binary);
@@ -167,4 +169,6 @@ std::string cleanPath(std::string filePath) {
     std::regex("^file://"),
     ""
   );
+}
+
 }

@@ -9,6 +9,8 @@
 
 #include <string>
 
+namespace cmpayc::rnfsturbo {
+
 class RNFSTurboLogger {
 private:
   RNFSTurboLogger() = delete;
@@ -45,3 +47,5 @@ public:
     return sprintf(formattedString);
   }
 };
+
+}

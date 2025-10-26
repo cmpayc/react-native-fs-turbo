@@ -105,6 +105,7 @@ export type FSInfoResult = {
   freeSpace: number; // The amount of available storage space on the device (in bytes).
   totalSpaceEx?: number; // The amount of available external storage space on the device (in bytes) (android only)
   freeSpaceEx?: number; // The amount of available external storage space on the device (in bytes) (android only)
+  encryptionEnabled: boolean; // Check if encryption is enabled in the RNFSTurbo library
 };
 
 export type ScanResult = {
@@ -181,6 +182,11 @@ export type ReadOptions =
   | EncodingType
   | {
       encoding?: EncodingType;
+      encrypted?: boolean;
+      passphrase?: string | number[];
+      iv?: string | number[];
+      mode?: "ecb" | "cbc" | "cfb";
+      padding?: "ansi_x9.23" | "iso/iec_7816-4" | "pkcs5/pkcs7" | "zero" | "no";
     }
   | undefined;
 
@@ -189,6 +195,11 @@ export type WriteOptions =
   | {
       encoding?: EncodingType;
       NSFileProtectionKey?: IOSProtectionTypes;
+      encrypted?: boolean;
+      passphrase?: string | number[];
+      iv?: string | number[];
+      mode?: "ecb" | "cbc" | "cfb";
+      padding?: "ansi_x9.23" | "iso/iec_7816-4" | "pkcs5/pkcs7" | "zero" | "no";
     }
   | undefined;
 
