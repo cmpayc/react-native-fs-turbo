@@ -9,6 +9,8 @@
 #include "RNFSTurboPlatformHelper.h"
 #include "RNFSTurboLogger.h"
 
+namespace cmpayc::rnfsturbo {
+
 void JavaHashMapToStlStringStringMap(JNIEnv *env, jobject hashMap, std::map<std::string, std::string>& mapOut) {
   // Get the Map's entry Set.
   jclass mapClass = env->FindClass("java/util/Map");
@@ -303,7 +305,7 @@ RNFSTurboPlatformHelper::RNFSTurboPlatformHelper(JNIEnv *env) {
   jniEnv = env;
   jclass jniCls = env->FindClass("com/cmpayc/rnfsturbo/RNFSTurboPlatformHelper");
   jmethodID initObject = jniEnv->GetMethodID(jniCls, "<init>", "(Landroid/content/Context;)V");
-  jclass contextCls = env->FindClass("com/cmpayc/rnfsturbo/RNFSTurboPlatformContextModule");
+  jclass contextCls = env->FindClass("com/cmpayc/rnfsturbo/RNFSTurboModule");
   jmethodID mid = env->GetStaticMethodID(contextCls, "getContext", "()Landroid/content/Context;");
   jobject context = env->CallStaticObjectMethod(contextCls, mid);
   jobject obj = jniEnv->NewObject(jniCls, initObject, context);
@@ -718,4 +720,6 @@ std::vector<std::string> RNFSTurboPlatformHelper::getAllExternalFilesDirs() {
   jniEnv->DeleteLocalRef(jniCls);
 
   return items;
+}
+
 }

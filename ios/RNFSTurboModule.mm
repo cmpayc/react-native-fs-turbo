@@ -1,20 +1,33 @@
 //
-//  RNFSTurboPlatformContextModule.m
+//  RNFSTurboModule.m
 //  react-native-fs-turbo
 //
-//  Created by Sergei Kazakov on 03.08.24.
+//  Created by Sergei Kazakov on 23.10.25.
 //
 
-#import "RNFSTurboPlatformContextModule.h"
+#import "RNFSTurboModule.h"
+#import "RNFSTurboInstall.h"
 #import <Foundation/Foundation.h>
 
-@implementation RNFSTurboPlatformContextModule
+@implementation RNFSTurboModule {
+  std::weak_ptr<facebook::react::CallInvoker> _callInvoker;
+}
 
 RCT_EXPORT_MODULE()
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
     (const facebook::react::ObjCTurboModule::InitParams&)params {
-  return std::make_shared<facebook::react::NativeRNFSTurboPlatformContextModuleSpecJSI>(params);
+  _callInvoker = params.jsInvoker;
+  return std::make_shared<facebook::react::NativeRNFSTurboModuleSpecJSI>(params);
+}
+
+- (void)installJSIBindingsWithRuntime:(facebook::jsi::Runtime&)runtime {
+  std::shared_ptr<facebook::react::CallInvoker> callInvoker = _callInvoker.lock();
+  if (callInvoker == nullptr) {
+    throw std::runtime_error("CallInvoker not found");
+  }
+
+  cmpayc::rnfsturbo::install(runtime, callInvoker);
 }
 
 - (NSString*)getMainBundlePath {
@@ -62,6 +75,10 @@ RCT_EXPORT_MODULE()
 
 - (NSString*)getRoamingDirectoryPath {
   return @"";
+}
+
+- (nonnull NSNumber *)createRNFSTurbo { 
+  return @(true);
 }
 
 @end

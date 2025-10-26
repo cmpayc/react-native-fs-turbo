@@ -10,11 +10,7 @@ module.exports = {
       /**
        * @type {import('@react-native-community/cli-types').AndroidDependencyParams}
        */
-      android: {
-        cxxModuleCMakeListsModuleName: 'react-native-fs-turbo',
-        cxxModuleCMakeListsPath: 'CMakeLists.txt',
-        cxxModuleHeaderName: 'NativeRNFSTurboModule',
-      },
+      android: {},
     },
   },
 };

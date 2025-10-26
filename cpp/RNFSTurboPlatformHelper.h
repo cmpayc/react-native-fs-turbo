@@ -13,6 +13,8 @@
 #include <string>
 #include <thread>
 
+namespace cmpayc::rnfsturbo {
+
 typedef std::function<void (int jobId, int statusCode, float bytesWritten)> RNFSTurboCompleteDownloadCallback;
 
 typedef std::function<void (int jobId, const char* errorMessage)> RNFSTurboErrorCallback;
@@ -155,3 +157,5 @@ public:
   
   void setResourceValue(const char* path, const char* optionType, const char* optionValue);
 };
+
+}

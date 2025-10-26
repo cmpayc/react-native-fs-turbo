@@ -12,6 +12,8 @@
 #include <regex>
 #include <vector>
 
+namespace cmpayc::rnfsturbo {
+
 std::string readFile(const char* filePath, int offset, int length);
 
 std::vector<uint8_t> readFileUint8(const char* filePath, int offset, int length);
@@ -27,3 +29,5 @@ void writeFileFloat32(const char* filePath, const float *contentFloat32, size_t 
 void writeWithOffset(const char* filePath, std::string_view content, int offset);
 
 std::string cleanPath(std::string filePath);
+
+}

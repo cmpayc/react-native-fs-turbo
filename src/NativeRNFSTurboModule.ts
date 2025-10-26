@@ -1,8 +1,7 @@
+/* eslint-disable import/no-import-module-exports */
 import type { TurboModule } from "react-native";
 import { TurboModuleRegistry } from "react-native";
-import { UnsafeObject } from "react-native/Libraries/Types/CodegenTypes";
 import { ModuleNotFoundError } from "./ModuleNotFoundError";
-import { getRNFSTurboPlatformContextTurboModule } from "./NativeRNFSTurboPlatformContextModule";
 
 /**
  * Used for configuration of a single RNFSTurbo instance.
@@ -28,9 +27,19 @@ export interface Configuration {
 export interface Spec extends TurboModule {
   /**
    * Create a new instance of RNFSTurbo.
-   * The returned {@linkcode UnsafeObject} is a `jsi::HostObject`.
    */
-  readonly createRNFSTurbo: () => UnsafeObject;
+  readonly createRNFSTurbo: () => boolean;
+  getMainBundlePath(): string;
+  getCachesDirectoryPath(): string;
+  getDocumentDirectoryPath(): string;
+  getTemporaryDirectoryPath(): string;
+  getLibraryDirectoryPath(): string;
+  getExternalDirectoryPath(): string;
+  getExternalStorageDirectoryPath(): string;
+  getExternalCachesDirectoryPath(): string;
+  getDownloadDirectoryPath(): string;
+  getPicturesDirectoryPath(): string;
+  getRoamingDirectoryPath(): string;
 }
 
 let module: Spec | null;
@@ -45,24 +54,19 @@ export function getRNFSTurboModule(): {
       // 1. Load RNFS TurboModule
       module = TurboModuleRegistry.getEnforcing<Spec>("RNFSTurboModule");
 
-      // 2. Get the PlatformContext TurboModule as well
-      const platformContext = getRNFSTurboPlatformContextTurboModule();
-
-      // 3. Initialize it with the storage directores from platform-specific context
+      // 2. Create platform-specific configuration
       configuration = {
-        mainBundlePath: platformContext.getMainBundlePath(),
-        cachesDirectoryPath: platformContext.getCachesDirectoryPath(),
-        documentDirectoryPath: platformContext.getDocumentDirectoryPath(),
-        temporaryDirectoryPath: platformContext.getTemporaryDirectoryPath(),
-        libraryDirectoryPath: platformContext.getLibraryDirectoryPath(),
-        externalDirectoryPath: platformContext.getExternalDirectoryPath(),
-        externalStorageDirectoryPath:
-          platformContext.getExternalStorageDirectoryPath(),
-        externalCachesDirectoryPath:
-          platformContext.getExternalCachesDirectoryPath(),
-        downloadDirectoryPath: platformContext.getDownloadDirectoryPath(),
-        picturesDirectoryPath: platformContext.getPicturesDirectoryPath(),
-        roamingDirectoryPath: platformContext.getRoamingDirectoryPath(),
+        mainBundlePath: module.getMainBundlePath(),
+        cachesDirectoryPath: module.getCachesDirectoryPath(),
+        documentDirectoryPath: module.getDocumentDirectoryPath(),
+        temporaryDirectoryPath: module.getTemporaryDirectoryPath(),
+        libraryDirectoryPath: module.getLibraryDirectoryPath(),
+        externalDirectoryPath: module.getExternalDirectoryPath(),
+        externalStorageDirectoryPath: module.getExternalStorageDirectoryPath(),
+        externalCachesDirectoryPath: module.getExternalCachesDirectoryPath(),
+        downloadDirectoryPath: module.getDownloadDirectoryPath(),
+        picturesDirectoryPath: module.getPicturesDirectoryPath(),
+        roamingDirectoryPath: module.getRoamingDirectoryPath(),
       };
     }
 

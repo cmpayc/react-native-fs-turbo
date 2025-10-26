@@ -1,33 +1,77 @@
-
 //
-//  RNFSTurboPlatformContextModule.java
+//  RNFSTurboModule.java
 //  react-native-fs-turbo
 //
-//  Created by Sergei Kazakov on 16.09.24.
+//  Created by Sergei Kazakov on 20.10.25.
 //
 
 package com.cmpayc.rnfsturbo;
 
-import android.content.Context;
 import android.os.Environment;
-
+import android.content.Context;
+import androidx.annotation.Keep;
 import java.io.File;
 
+import com.facebook.jni.HybridData;
+import com.facebook.proguard.annotations.DoNotStrip;
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.common.annotations.FrameworkAPI;
+import com.facebook.react.turbomodule.core.CallInvokerHolderImpl;
+import com.facebook.react.turbomodule.core.interfaces.CallInvokerHolder;
 
-public class RNFSTurboPlatformContextModule extends NativeRNFSTurboPlatformContextModuleSpec {
+@DoNotStrip
+@Keep
+@FrameworkAPI
+public class RNFSTurboModule extends RNFSTurboSpec {
+  private final HybridData mHybridData;
   private final ReactApplicationContext context;
 
   public static Context externalContext;
+  public static final String NAME = "RNFSTurboModule";
 
-  public RNFSTurboPlatformContextModule(ReactApplicationContext reactContext) {
-    super(reactContext);
-    context = reactContext;
-    externalContext = reactContext;
+  static {
+    // Make sure RNFSTurbo's C++ library is loaded
+    JNIOnLoad.initializeNativeRNFSTurboModule();
+  }
+
+  public RNFSTurboModule(ReactApplicationContext context) {
+    super(context);
+    this.context = context;
+    externalContext = context;
+    this.mHybridData = initHybrid();
   }
 
   public static Context getContext() {
     return externalContext;
+  }
+
+  @Override
+  public String getName() {
+    return NAME;
+  }
+
+  @Override
+  public boolean createRNFSTurbo() {
+    try {
+      // 1. Get jsi::Runtime pointer
+      if (this.context.getJavaScriptContextHolder() == null) {
+        return false;
+      }
+      long jsContext = this.context.getJavaScriptContextHolder().get();
+
+      // 2. Get CallInvokerHolder
+      CallInvokerHolder callInvokerHolderBase = this.context.getJSCallInvokerHolder();
+      if (!(callInvokerHolderBase instanceof CallInvokerHolderImpl)) {
+        return false;
+      }
+      CallInvokerHolderImpl callInvokerHolder = (CallInvokerHolderImpl) callInvokerHolderBase;
+
+      // 3. Create RNFSTurbo instance
+      return createRNFSTurbo(jsContext, callInvokerHolder);
+    } catch (Throwable e) {
+      return false;
+    }
   }
 
   @Override
@@ -96,4 +140,11 @@ public class RNFSTurboPlatformContextModule extends NativeRNFSTurboPlatformConte
   public String getRoamingDirectoryPath() {
     return "";
   }
+
+  private native HybridData initHybrid();
+
+  private native boolean createRNFSTurbo(
+    long jsRuntimePointer,
+    CallInvokerHolderImpl callInvokerHolder
+  );
 }

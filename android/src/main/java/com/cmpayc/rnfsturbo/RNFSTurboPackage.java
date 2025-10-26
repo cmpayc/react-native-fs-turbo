@@ -9,22 +9,24 @@ package com.cmpayc.rnfsturbo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.OptIn;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.common.annotations.FrameworkAPI;
 import com.facebook.react.module.model.ReactModuleInfo;
 import com.facebook.react.module.model.ReactModuleInfoProvider;
 import com.facebook.react.TurboReactPackage;
 
-import java.util.HashMap;
-import java.util.Map;
-
+@OptIn(markerClass = FrameworkAPI.class)
 public class RNFSTurboPackage extends TurboReactPackage {
   @Nullable
   @Override
   public NativeModule getModule(String name, @NonNull ReactApplicationContext reactContext) {
-    if (name.equals(RNFSTurboPlatformContextModule.NAME)) {
-      return new RNFSTurboPlatformContextModule(reactContext);
+    if (name.equals(RNFSTurboModule.NAME)) {
+      return new RNFSTurboModule(reactContext);
     } else {
       return null;
     }
@@ -35,13 +37,13 @@ public class RNFSTurboPackage extends TurboReactPackage {
     return () -> {
       final Map<String, ReactModuleInfo> moduleInfos = new HashMap<>();
       moduleInfos.put(
-        RNFSTurboPlatformContextModule.NAME,
+        RNFSTurboModule.NAME,
         new ReactModuleInfo(
-          RNFSTurboPlatformContextModule.NAME,
-          RNFSTurboPlatformContextModule.NAME,
+          RNFSTurboModule.NAME,
+          RNFSTurboModule.NAME,
           false, // canOverrideExistingModule
           false, // needsEagerInit
-          true, // hasConstants
+          false, // hasConstants
           false, // isCxxModule
           true // isTurboModule
         )

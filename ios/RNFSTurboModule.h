@@ -1,8 +1,8 @@
 //
-//  RNFSTurboPlatformContextModule.h
+//  RNFSTurboModule.h
 //  react-native-fs-turbo
 //
-//  Created by Sergei Kazakov on 03.08.24.
+//  Created by Sergei Kazakov on 23.10.25.
 //
 
 #pragma once
@@ -12,7 +12,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface RNFSTurboPlatformContextModule : NSObject <NativeRNFSTurboPlatformContextModuleSpec>
+@interface RNFSTurboModule : NSObject <NativeRNFSTurboModuleSpec>
 
 @end
 

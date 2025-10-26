@@ -17,10 +17,10 @@ Pod::Spec.new do |s|
     "cpp/**/*.{hpp,cpp,c,h}",
   ]
   s.resource_bundles = { 'RNFSTurbo_PrivacyInfo' => 'ios/PrivacyInfo.xcprivacy' }
-  s.compiler_flags = '-x objective-c++'
+  s.compiler_flags = '-x objective-c++ -DUSE_ARM_AES'
   s.frameworks = 'Photos', 'AVFoundation'
   s.pod_target_xcconfig = {
-    "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
+    "CLANG_CXX_LANGUAGE_STANDARD" => "c++20"
   }
   install_modules_dependencies(s)
 end
