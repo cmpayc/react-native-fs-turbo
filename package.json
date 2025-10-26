@@ -20,6 +20,7 @@
     "android/CMakeLists.txt",
     "android/gradle.properties",
     "cpp/**/*.h",
+    "cpp/**/*.hpp",
     "cpp/**/*.cpp",
     "lib/commonjs",
     "lib/module",
