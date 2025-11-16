@@ -157,6 +157,8 @@ import RNFSTurbo from 'react-native-fs-turbo';
 const pathUtf8 = `${RNFSTurbo.DocumentDirectoryPath}/test_utf8.txt`;
 const pathBase64 = `${RNFSTurbo.DocumentDirectoryPath}/test_base64.txt`;
 const pathUint8 = `${RNFSTurbo.DocumentDirectoryPath}/test_uint8.txt`;
+const pathUint16 = `${RNFSTurbo.DocumentDirectoryPath}/test_uint16.txt`;
+const pathUint32 = `${RNFSTurbo.DocumentDirectoryPath}/test_uint32.txt`;
 const pathFloat32 = `${RNFSTurbo.DocumentDirectoryPath}/test_float32.txt`;
 
 try {
@@ -164,6 +166,10 @@ try {
   RNFSTurbo.writeFile(path, 'TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ=', 'base64');
   // An array with uint8 can be passed as input data
   RNFSTurbo.writeFile(path, [76, 111, 114, 101, 109, 32, 105, 112, 115, 117, 109, 32, 100, 111, 108, 111, 114, 32, 115, 105, 116, 32, 97, 109, 101, 116], 'uint8');
+  // An array with uint16 can be passed as input data
+  RNFSTurbo.writeFile(path, [26471, 18, 12934, 4322, 8329, 15345, 48319, 21939, 10], 'uint16');
+  // An array with uint32 can be passed as input data
+  RNFSTurbo.writeFile(path, [1024219304, 433473, 6647, 10, 4638827, 12643, 0, 15833683], 'uint32');
   // An array with float32 can be passed as input data
   RNFSTurbo.writeFile(path, [0.4233244061470032, 0.5435456037521362, 2.5345540046691895, 7.2343244552612305, 3.867867946624756, 0.7876875996589661], 'float32');
 } catch (err: Error) {
@@ -366,13 +372,13 @@ Node.js style version of `readDir` that returns only the names. Note the lowerca
 
 ### `readFile(filepath: string, options?: ReadOptions): string | number[]`
 
-Reads the file at `path` and return contents. `options` can be string of encrypted types or object, default is `utf8`. Use `base64` or `uint8` or `float32` encoding for reading binary files.
+Reads the file at `path` and return contents. `options` can be string of encrypted types or object, default is `utf8`. Use `base64` or `uint8` or `uint16` or `uint32` or `float32` encoding for reading binary files.
 
 ```ts
 type ReadOptions =
-  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
+  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'uint16' | 'uint32' | 'float32'
   | {
-      encoding: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'.
+      encoding: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'uint16' | 'uint32' | 'float32'.
       // Next flags will work only if encryption is enabled
       encrypted?: boolean;
       passphrase?: string | number[];
@@ -382,19 +388,16 @@ type ReadOptions =
     };
 ```
 
-Note: you will take quite a performance hit if you are reading big files
-
 ### `read(filepath: string, length: number, position: number, options?: ReadOptions): string | number[]`
 
-Reads `length` bytes from the given `position` of the file at `path` and returns contents. `options` can be string of encrypted types or object, default is `utf8`. Use `base64` or `uint8` or `float32` encoding for reading binary files.
+Reads `length` bytes from the given `position` of the file at `path` and returns contents. `options` can be string of encrypted types or object, default is `utf8`. Use `base64` or `uint8` or `uint16` | `uint32` or `float32` encoding for reading binary files.
 
 ```ts
 type ReadOptions =
-  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
-  | { encoding: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32' };
+  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'uint16' | 'uint32' | 'float32'
+  | { encoding: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'uint16' | 'uint32' | 'float32' };
 ```
 
-Note: reading big files piece by piece using this method may be useful in terms of performance.
 Note: `float32` size is 4 bytes, so `position` and `length` should be specified in bytes (multiplied by 4)
 Note: encryption doesn't work for partial file reading
 
@@ -426,9 +429,9 @@ Write the `contents` to `filepath`. `options` can be string of encrypted types o
 
 ```ts
 type WriteOptions =
-  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
+  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'uint16' | 'uint32' | 'float32'
   | {
-      encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32',
+      encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'uint16' | 'uint32' | 'float32',
       NSFileProtectionKey?:
         |"NSFileProtectionNone"
         | "NSFileProtectionComplete"
@@ -452,9 +455,9 @@ Append the `contents` to `filepath`. `encoding` can be string of encrypted types
 
 ```ts
 type WriteOptions =
-  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
+  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'uint16' | 'uint32' | 'float32'
   | {
-      encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32',
+      encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'uint16' | 'uint32' | 'float32',
       NSFileProtectionKey?:
         |"NSFileProtectionNone"
         | "NSFileProtectionComplete"
@@ -474,9 +477,9 @@ Write the `contents` to `filepath` at the given random access position. When `po
 
 ```ts
 type WriteOptions =
-  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32'
+  | 'utf8' | 'ascii' | 'base64' | 'uint8' | 'uint16' | 'uint32' | 'float32'
   | {
-      encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'float32',
+      encoding?: 'utf8' | 'ascii' | 'base64' | 'uint8' | 'uint16' | 'uint32' | 'float32',
       NSFileProtectionKey?:
         |"NSFileProtectionNone"
         | "NSFileProtectionComplete"
