@@ -148,9 +148,11 @@ export type OverloadedReadDirItem<T extends boolean | undefined> = T extends
 
 export type OverloadedReadResult<T extends ReadOptions> = T extends
   | "uint8"
+  | "uint16"
+  | "uint32"
   | "float32"
   | Partial<{
-      encoding: "uint8" | "float32";
+      encoding: "uint8" | "uint16" | "uint32" | "float32";
     }>
   ? number[]
   : string;
@@ -169,7 +171,14 @@ export type OverloadedScanResult<T extends ScanResultFunc> = T extends undefined
   ? Promise<ScanResult>
   : { jobId: number };
 
-export type EncodingType = "utf8" | "base64" | "uint8" | "float32" | "ascii";
+export type EncodingType =
+  | "utf8"
+  | "base64"
+  | "uint8"
+  | "uint16"
+  | "uint32"
+  | "float32"
+  | "ascii";
 
 export type IOSProtectionTypes =
   | "NSFileProtectionNone"
