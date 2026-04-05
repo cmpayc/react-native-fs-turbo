@@ -601,20 +601,22 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         }
         
         try {
+          struct stat t_stat;
+          bool fileExists = stat(filePath.c_str(), &t_stat) >= 0;
           if (encoding == "uint8" || encoding == "uint16" || encoding == "uint32") {
-            if (propName == "write" && offset > -1 && encoding == "uint8") {
+            if (fileExists && propName == "write" && offset > -1 && encoding == "uint8") {
               std::string replaceString(
                 reinterpret_cast<char*>(contentArrUint8),
                 contentLength
               );
               writeWithOffset(filePath.c_str(), replaceString, offset);
-            } else if (propName == "write" && offset > -1 && encoding == "uint16") {
+            } else if (fileExists && propName == "write" && offset > -1 && encoding == "uint16") {
               std::string replaceString(
                 reinterpret_cast<char*>(contentArrUint16),
                 contentLength
               );
               writeWithOffset(filePath.c_str(), replaceString, offset);
-            } else if (propName == "write" && offset > -1 && encoding == "uint32") {
+            } else if (fileExists && propName == "write" && offset > -1 && encoding == "uint32") {
               std::string replaceString(
                 reinterpret_cast<char*>(contentArrUint32),
                 contentLength
@@ -628,11 +630,11 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
                 contentArrUint16,
                 contentArrUint32,
                 contentLength,
-                propName == "appendFile" || (propName == "write" && offset == -1)
+                fileExists && (propName == "appendFile" || (propName == "write" && offset == -1))
               );
             }
           } else if (encoding == "float32") {
-            if (propName == "write" && offset > -1) {
+            if (fileExists && propName == "write" && offset > -1) {
               std::string replaceString = reinterpret_cast<char*>(contentArrFloat32);
               writeWithOffset(filePath.c_str(), replaceString, offset);
             } else {
@@ -640,11 +642,11 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
                 filePath.c_str(),
                 contentArrFloat32,
                 contentLength,
-                propName == "appendFile" || (propName == "write" && offset == -1)
+                fileExists && (propName == "appendFile" || (propName == "write" && offset == -1))
               );
             }
           } else {
-            if (propName == "write" && offset > -1) {
+            if (fileExists && propName == "write" && offset > -1) {
               writeWithOffset(
                 filePath.c_str(),
                 content,
@@ -673,14 +675,14 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               writeFile(
                 filePath.c_str(),
                 encryptedContent,
-                propName == "appendFile" || (propName == "write" && offset == -1)
+                fileExists && (propName == "appendFile" || (propName == "write" && offset == -1))
               );
 #endif
             } else {
               writeFile(
                 filePath.c_str(),
                 content,
-                propName == "appendFile" || (propName == "write" && offset == -1)
+                fileExists && (propName == "appendFile" || (propName == "write" && offset == -1))
               );
             }
           }
