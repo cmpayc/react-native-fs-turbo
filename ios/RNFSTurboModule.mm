@@ -30,6 +30,12 @@ RCT_EXPORT_MODULE()
   cmpayc::rnfsturbo::install(runtime, callInvoker);
 }
 
+- (void)installJSIBindingsWithRuntime:(facebook::jsi::Runtime&)runtime
+                        callInvoker:(const std::shared_ptr<facebook::react::CallInvoker>&)callInvoker {
+  _callInvoker = callInvoker;
+  [self installJSIBindingsWithRuntime:runtime];
+}
+
 - (NSString*)getMainBundlePath {
   return [[NSBundle mainBundle] bundlePath];
 }
