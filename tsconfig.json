@@ -18,7 +18,8 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "esnext",
-    "outDir": "lib"
+    "outDir": "lib",
+    "types": ["node"]
   },
   "include": [
     "src",
