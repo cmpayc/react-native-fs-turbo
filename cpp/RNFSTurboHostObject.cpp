@@ -1619,17 +1619,20 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         RNFSTurboPlatformHelper::jobId += 1;
         int jobId = RNFSTurboPlatformHelper::jobId;
         
-        RNFSTurboCompleteUploadCallback completeCallback = [&runtime, completeFunc](int jobId, int statusCode, std::map<std::string, std::string> headers, const char* body) -> void {
-          jsi::Object result = jsi::Object(runtime);
-          result.setProperty(runtime, "jobId", jsi::Value(jobId));
-          result.setProperty(runtime, "statusCode", jsi::Value(statusCode));
-          jsi::Object jsHeaders = jsi::Object(runtime);
-          for (auto const& [key, val] : headers) {
-            jsHeaders.setProperty(runtime, key.c_str(), jsi::String::createFromUtf8(runtime, val));
-          }
-          result.setProperty(runtime, "headers", jsHeaders);
-          result.setProperty(runtime, "body", jsi::String::createFromUtf8(runtime, body));
-          completeFunc->call(runtime, std::move(result));
+        RNFSTurboCompleteUploadCallback completeCallback = [&runtime, completeFunc, this](int jobId, int statusCode, std::map<std::string, std::string> headers, const char* body) -> void {
+          std::string bodyString = body != nullptr ? std::string(body) : std::string();
+          _jsInvoker->invokeAsync([&runtime, completeFunc, jobId, statusCode, headers = std::move(headers), bodyString = std::move(bodyString)]() {
+            jsi::Object result = jsi::Object(runtime);
+            result.setProperty(runtime, "jobId", jsi::Value(jobId));
+            result.setProperty(runtime, "statusCode", jsi::Value(statusCode));
+            jsi::Object jsHeaders = jsi::Object(runtime);
+            for (auto const& [key, val] : headers) {
+              jsHeaders.setProperty(runtime, key.c_str(), jsi::String::createFromUtf8(runtime, val));
+            }
+            result.setProperty(runtime, "headers", jsHeaders);
+            result.setProperty(runtime, "body", jsi::String::createFromUtf8(runtime, bodyString));
+            completeFunc->call(runtime, std::move(result));
+          });
         };
         
         RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc, this](int jobId, const char* errorMessage) -> void {
