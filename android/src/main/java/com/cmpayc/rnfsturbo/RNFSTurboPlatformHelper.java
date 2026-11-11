@@ -13,7 +13,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
-Modified by Sergei Kazakov on 31.10.24.
+Modified by Sergei Kazakov on 11.11.26.
 */
 
 package com.cmpayc.rnfsturbo;
@@ -27,6 +27,7 @@ import android.os.Environment;
 import android.os.StatFs;
 import android.util.SparseArray;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -118,10 +119,14 @@ public class RNFSTurboPlatformHelper {
         }
       }
 
-      byte[] buffer = new byte[stream.available()];
-      stream.read(buffer);
+      ByteArrayOutputStream output = new ByteArrayOutputStream();
+      byte[] buffer = new byte[8192];
+      int bytesRead;
+      while ((bytesRead = stream.read(buffer)) != -1) {
+        output.write(buffer, 0, bytesRead);
+      }
 
-      return buffer;
+      return output.toByteArray();
     } catch (Exception ex) {
       ex.printStackTrace();
       throw new Exception("Failed to open file");
