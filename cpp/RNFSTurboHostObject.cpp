@@ -1344,8 +1344,9 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         };
         
         RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc, this](int jobId, const char* errorMessage) -> void {
-          _jsInvoker->invokeAsync([&runtime, errorFunc, jobId, errorMessage]() {
-            errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, RNFSTurboLogger::sprintf("%s: %s", "downloadFile", errorMessage)));
+          std::string message = RNFSTurboLogger::sprintf("%s: %s", "downloadFile", errorMessage != nullptr ? errorMessage : "Unknown error");
+          _jsInvoker->invokeAsync([&runtime, errorFunc, message = std::move(message)]() {
+            errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, message));
           });
         };
         
@@ -1636,8 +1637,9 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         };
         
         RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc, this](int jobId, const char* errorMessage) -> void {
-          _jsInvoker->invokeAsync([&runtime, errorFunc, errorMessage]() {
-            errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", errorMessage)));
+          std::string message = RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", errorMessage != nullptr ? errorMessage : "Unknown error");
+          _jsInvoker->invokeAsync([&runtime, errorFunc, message = std::move(message)]() {
+            errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, message));
           });
         };
         
