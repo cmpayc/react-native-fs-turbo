@@ -370,7 +370,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               jsi::Array res = std::visit([&](auto&& vec) -> jsi::Array {
                 jsi::Array arr(runtime, vec.size());
                 for (size_t i = 0; i < vec.size(); ++i) {
-                  res.setValueAtIndex(
+                  arr.setValueAtIndex(
                     runtime,
                     i,
                     jsi::Value(static_cast<double>(vec[i]))
@@ -635,7 +635,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             }
           } else if (encoding == "float32") {
             if (fileExists && propName == "write" && offset > -1) {
-              std::string replaceString = reinterpret_cast<char*>(contentArrFloat32);
+              std::string replaceString(
+                reinterpret_cast<char*>(contentArrFloat32),
+                contentLength
+              );
               writeWithOffset(filePath.c_str(), replaceString, offset);
             } else {
               writeFileFloat32(
