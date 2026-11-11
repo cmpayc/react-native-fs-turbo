@@ -73,26 +73,26 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         obj.setProperty(runtime, "mode", jsi::Value(static_cast<int>(t_stat.st_mode)));
         obj.setProperty(runtime, "originalFilepath", jsi::String::createFromUtf8(runtime, filePath));
         if (isNewFormat) {
-          obj.setProperty(runtime, "isDirectory", jsi::Value(static_cast<bool>(t_stat.st_mode & S_IFDIR)));
+          obj.setProperty(runtime, "isDirectory", jsi::Value(static_cast<bool>(S_ISDIR(t_stat.st_mode))));
         } else {
           obj.setProperty(runtime, "isDirectory", jsi::Function::createFromHostFunction(
             runtime,
             jsi::PropNameID::forAscii(runtime, "isDirectory"),
             0,
             [t_stat](jsi::Runtime& rt, const jsi::Value& thisVal, const jsi::Value* args, size_t count) {
-              return jsi::Value(static_cast<bool>(t_stat.st_mode & S_IFDIR));
+              return jsi::Value(static_cast<bool>(S_ISDIR(t_stat.st_mode)));
             }
           ));
         }
         if (isNewFormat) {
-          obj.setProperty(runtime, "isFile", jsi::Value(static_cast<bool>(t_stat.st_mode & S_IFREG)));
+          obj.setProperty(runtime, "isFile", jsi::Value(static_cast<bool>(S_ISREG(t_stat.st_mode))));
         } else {
           obj.setProperty(runtime, "isFile", jsi::Function::createFromHostFunction(
             runtime,
             jsi::PropNameID::forAscii(runtime, "isFile"),
             0,
             [t_stat](jsi::Runtime& rt, const jsi::Value& thisVal, const jsi::Value* args, size_t count) {
-              return jsi::Value(static_cast<bool>(t_stat.st_mode & S_IFREG));
+              return jsi::Value(static_cast<bool>(S_ISREG(t_stat.st_mode)));
             }
           ));
         }
@@ -220,7 +220,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
               "name",
               jsi::String::createFromUtf8(runtime, isAndroidAssets ? assetsDirItemsIt->name : dent->d_name)
             );
-            bool isDirectory = isAndroidAssets ? assetsDirItemsIt->isDirectory : static_cast<bool>(t_stat.st_mode & S_IFDIR);
+            bool isDirectory = isAndroidAssets ? assetsDirItemsIt->isDirectory : S_ISDIR(t_stat.st_mode);
             if (isNewFormat) {
               obj.setProperty(runtime, "isDirectory", jsi::Value(isDirectory));
             } else {
@@ -228,12 +228,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
                 runtime,
                 jsi::PropNameID::forAscii(runtime, "isDirectory"),
                 0,
-                [&isDirectory](jsi::Runtime& rt, const jsi::Value& thisVal, const jsi::Value* args, size_t count) {
+                [isDirectory](jsi::Runtime& rt, const jsi::Value& thisVal, const jsi::Value* args, size_t count) {
                   return jsi::Value(isDirectory);
                 }
               ));
             }
-            bool isFile = isAndroidAssets ? !assetsDirItemsIt->isDirectory : static_cast<bool>(t_stat.st_mode & S_IFREG);
+            bool isFile = isAndroidAssets ? !assetsDirItemsIt->isDirectory : S_ISREG(t_stat.st_mode);
             if (isNewFormat) {
               obj.setProperty(runtime, "isFile", jsi::Value(isFile));
             } else {
@@ -241,7 +241,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
                 runtime,
                 jsi::PropNameID::forAscii(runtime, "isFile"),
                 0,
-                [&isFile](jsi::Runtime& rt, const jsi::Value& thisVal, const jsi::Value* args, size_t count) {
+                [isFile](jsi::Runtime& rt, const jsi::Value& thisVal, const jsi::Value* args, size_t count) {
                   return jsi::Value(isFile);
                 }
               ));
@@ -798,7 +798,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         if (res < 0) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", srcFolderPath.c_str(), "copyFolder", strerror(errno)));
         }
-        if (!(t_stat.st_mode & S_IFDIR)) {
+        if (!S_ISDIR(t_stat.st_mode)) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", srcFolderPath.c_str(), "copyFolder", "Not a directory"));
         }
 
