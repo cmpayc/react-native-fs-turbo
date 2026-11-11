@@ -62,7 +62,7 @@ std::vector<T> readFileUint(const char* filePath, int offset, int length) {
   }
 
   if constexpr (std::is_same_v<T, uint8_t>) {
-    if (offset == 0) {
+    if (offset == 0 && length == 0) {
       std::vector<T> vBuffer((std::istreambuf_iterator<char>(inputFile)), (std::istreambuf_iterator<char>()));
       inputFile.close();
       return vBuffer;
@@ -117,7 +117,9 @@ std::vector<float> readFileFloat32(const char* filePath, int offset, int length)
       inputFile.seekg(0);
     }
     vBuffer.resize(std::floor(size / sizeof(float)));
-    inputFile.read(reinterpret_cast<char*> (&vBuffer[0]), size);
+    if (!vBuffer.empty()) {
+      inputFile.read(reinterpret_cast<char*>(vBuffer.data()), vBuffer.size() * sizeof(float));
+    }
 
     inputFile.close();
     return vBuffer;
@@ -129,7 +131,9 @@ std::vector<float> readFileFloat32(const char* filePath, int offset, int length)
   if (size >= 4) {
     inputFile.seekg(0);
     vBuffer.resize(std::floor(size / sizeof(float)));
-    inputFile.read(reinterpret_cast<char*> (&vBuffer[0]), size);
+    if (!vBuffer.empty()) {
+      inputFile.read(reinterpret_cast<char*>(vBuffer.data()), vBuffer.size() * sizeof(float));
+    }
   }
 
   inputFile.close();
