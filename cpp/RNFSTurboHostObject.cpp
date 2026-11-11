@@ -635,7 +635,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             }
           } else if (encoding == "float32") {
             if (fileExists && propName == "write" && offset > -1) {
-              std::string replaceString = reinterpret_cast<char*>(contentArrFloat32);
+              std::string replaceString(
+                reinterpret_cast<char*>(contentArrFloat32),
+                contentLength
+              );
               writeWithOffset(filePath.c_str(), replaceString, offset);
             } else {
               writeFileFloat32(
