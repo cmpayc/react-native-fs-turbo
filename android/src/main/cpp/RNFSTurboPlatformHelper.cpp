@@ -548,27 +548,16 @@ void RNFSTurboPlatformHelper::uploadFiles(
     jniEnv->FindClass("java/lang/String"),
     jniEnv->NewStringUTF("")
   );
-  for (int i = 0; i < filesNum * 4; i += 4) {
-    jniEnv->SetObjectArrayElement(
-      filesArr,
-      i,
-      jniEnv->NewStringUTF(files[i].name.c_str())
-    );
-    jniEnv->SetObjectArrayElement(
-      filesArr,
-      i + 1,
-      jniEnv->NewStringUTF(files[i].filename.c_str())
-    );
-    jniEnv->SetObjectArrayElement(
-      filesArr,
-      i + 2,
-      jniEnv->NewStringUTF(files[i].filepath.c_str())
-    );
-    jniEnv->SetObjectArrayElement(
-      filesArr,
-      i + 3,
-      jniEnv->NewStringUTF(files[i].filetype.c_str())
-    );
+  auto setFilesArrElement = [&](int index, const std::string& value) {
+    jstring jValue = jniEnv->NewStringUTF(value.c_str());
+    jniEnv->SetObjectArrayElement(filesArr, index, jValue);
+    jniEnv->DeleteLocalRef(jValue);
+  };
+  for (int i = 0; i < filesNum; i++) {
+    setFilesArrElement(i * 4, files[i].name);
+    setFilesArrElement(i * 4 + 1, files[i].filename);
+    setFilesArrElement(i * 4 + 2, files[i].filepath);
+    setFilesArrElement(i * 4 + 3, files[i].filetype);
   }
 
   jclass mapClass = jniEnv->FindClass("java/util/HashMap");
