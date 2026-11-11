@@ -370,21 +370,25 @@ std::string RNFSTurboPlatformHelper::readFileAssetsOrRes(const char* filePath, b
     "readFileAssetsOrRes",
     "(Ljava/lang/String;Z)[B"
   );
+  jstring jFilePath = jniEnv->NewStringUTF(filePath);
   jbyteArray fileBytesArr = (jbyteArray) jniEnv->CallObjectMethod(
     jniObj,
     mid,
-    jniEnv->NewStringUTF(filePath),
+    jFilePath,
     isRes
   );
-  if (jniEnv->ExceptionCheck()) {
-    jniEnv->ExceptionClear();
-    throw isRes ? "Failed to open asset" : "Failed to open res";
-  }
-  jbyte* fileJBytes = jniEnv->GetByteArrayElements(fileBytesArr, nullptr);
-  std::string fileData = (char*) fileJBytes;
-  jniEnv->ReleaseByteArrayElements(fileBytesArr, fileJBytes, 0);
-
+  jniEnv->DeleteLocalRef(jFilePath);
   jniEnv->DeleteLocalRef(jniCls);
+  if (jniEnv->ExceptionCheck() || fileBytesArr == nullptr) {
+    jniEnv->ExceptionClear();
+    throw isRes ? "Failed to open res" : "Failed to open asset";
+  }
+  jsize fileLength = jniEnv->GetArrayLength(fileBytesArr);
+  std::string fileData(static_cast<size_t>(fileLength), '\0');
+  if (fileLength > 0) {
+    jniEnv->GetByteArrayRegion(fileBytesArr, 0, fileLength, reinterpret_cast<jbyte*>(fileData.data()));
+  }
+
   jniEnv->DeleteLocalRef(fileBytesArr);
 
   return fileData;
