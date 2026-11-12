@@ -975,6 +975,8 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           platformHelper->copyAssetsVideoIOS(videoUri.c_str(), destPath.c_str());
         } catch (const char* error_message) {
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", videoUri.c_str(), "copyAssetsVideoIOS", error_message));
+        } catch (const std::exception& e) {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", videoUri.c_str(), "copyAssetsVideoIOS", e.what()));
         }
 
         return jsi::String::createFromUtf8(runtime, destPath);

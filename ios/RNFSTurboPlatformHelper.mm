@@ -118,27 +118,28 @@ void RNFSTurboPlatformHelper::copyAssetsVideoIOS(const char* videoUri, const cha
   
   dispatch_group_t group = dispatch_group_create();
   dispatch_group_enter(group);
+  __block NSString *errorMessage = nil;
 
   [[PHImageManager defaultManager] requestAVAssetForVideo:phAsset options:options resultHandler:^(AVAsset *asset, AVAudioMix *audioMix, NSDictionary *info) {
     if ([asset isKindOfClass:[AVURLAsset class]]) {
       NSURL *url = [(AVURLAsset *)asset URL];
-      BOOL writeResult = false;
-        
-      if (@available(iOS 9.0, *)) {
-          NSURL *destinationUrl = [NSURL fileURLWithPath:nsDestPath relativeToURL:nil];
-          writeResult = [[NSFileManager defaultManager] copyItemAtURL:url toURL:destinationUrl error:&nsError];
-      } else {
-          NSData *videoData = [NSData dataWithContentsOfURL:url];
-          writeResult = [videoData writeToFile:nsDestPath options:NSDataWritingAtomic error:&nsError];
-      }
-
-      dispatch_group_leave(group);
+      NSURL *destinationUrl = [NSURL fileURLWithPath:nsDestPath relativeToURL:nil];
+      [[NSFileManager defaultManager] copyItemAtURL:url toURL:destinationUrl error:&nsError];
+    } else if (asset == nil) {
+      NSError *requestError = info[PHImageErrorKey];
+      errorMessage = requestError ? [requestError localizedDescription] : @"Failed to load video asset";
+    } else {
+      errorMessage = @"Unsupported video asset type (e.g. slow-motion video)";
     }
+    dispatch_group_leave(group);
   }];
   dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
-  
+
   if (nsError) {
-    throw [nsError localizedDescription];
+    errorMessage = [nsError localizedDescription];
+  }
+  if (errorMessage) {
+    throw std::runtime_error([errorMessage UTF8String] ?: "Failed to copy video asset");
   }
 }
 
