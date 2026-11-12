@@ -10,6 +10,7 @@
 #include <chrono>
 #include <functional>
 #include <map>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -78,6 +79,7 @@ public:
   static inline std::map<int, DownloadCallbacks> downloadCallbacks;
   static inline std::map<int, UploadCallbacks> uploadCallbacks;
   static inline std::map<int, RNFSTurboScanCallback> scanCallbacks;
+  static inline std::mutex callbacksMutex;
 private:
   JNIEnv *jniEnv;
   jobject jniObj;
