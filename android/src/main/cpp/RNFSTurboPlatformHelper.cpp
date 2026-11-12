@@ -143,6 +143,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
   int statusCode,
   double bytesWritten
 ) {
+  std::lock_guard<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   std::map<int, DownloadCallbacks>::iterator it = RNFSTurboPlatformHelper::downloadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::downloadCallbacks.end()) {
     RNFSTurboPlatformHelper::downloadCallbacks[jobId].completeCallback(
@@ -161,6 +162,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
   int jobId,
   jstring errorStr
 ) {
+  std::lock_guard<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   std::map<int, DownloadCallbacks>::iterator it = RNFSTurboPlatformHelper::downloadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::downloadCallbacks.end()) {
     const char *error = env->GetStringUTFChars(errorStr, nullptr);
@@ -180,6 +182,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
   double contentLength,
   jobject headersObj
 ) {
+  std::lock_guard<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   std::map<int, DownloadCallbacks>::iterator it = RNFSTurboPlatformHelper::downloadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::downloadCallbacks.end()) {
     std::map<std::string, std::string> headers;
@@ -203,6 +206,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
   double contentLength,
   double bytesWritten
 ) {
+  std::lock_guard<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   std::map<int, DownloadCallbacks>::iterator it = RNFSTurboPlatformHelper::downloadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::downloadCallbacks.end()) {
     RNFSTurboPlatformHelper::downloadCallbacks[jobId].progressCallback(
@@ -222,6 +226,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_uploadC
   jobject headersObj,
   jstring bodyStr
 ) {
+  std::lock_guard<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   std::map<int, UploadCallbacks>::iterator it = RNFSTurboPlatformHelper::uploadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::uploadCallbacks.end()) {
     std::map<std::string, std::string> headers;
@@ -241,6 +246,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_uploadB
   jclass cls,
   int jobId
 ) {
+  std::lock_guard<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   std::map<int, UploadCallbacks>::iterator it = RNFSTurboPlatformHelper::uploadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::uploadCallbacks.end()) {
     RNFSTurboPlatformHelper::uploadCallbacks[jobId].beginCallback(jobId);
@@ -255,6 +261,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_uploadP
   double totalBytesExpectedToSend,
   double totalBytesSent
 ) {
+  std::lock_guard<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   std::map<int, UploadCallbacks>::iterator it = RNFSTurboPlatformHelper::uploadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::uploadCallbacks.end()) {
     RNFSTurboPlatformHelper::uploadCallbacks[jobId].progressCallback(
@@ -272,6 +279,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_uploadE
   int jobId,
   jstring errorStr
 ) {
+  std::lock_guard<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   std::map<int, UploadCallbacks>::iterator it = RNFSTurboPlatformHelper::uploadCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::uploadCallbacks.end()) {
     const char *error = env->GetStringUTFChars(errorStr, nullptr);
@@ -289,6 +297,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_scanCal
   int jobId,
   jstring pathStr
 ) {
+  std::lock_guard<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   std::map<int, RNFSTurboScanCallback>::iterator it = RNFSTurboPlatformHelper::scanCallbacks.find(jobId);
   if (it != RNFSTurboPlatformHelper::scanCallbacks.end()) {
     const char *path = env->GetStringUTFChars(pathStr, nullptr);
@@ -483,6 +492,7 @@ void RNFSTurboPlatformHelper::downloadFile(
 
   bool hasBeginCallback = beginCallback.has_value();
   bool hasProgressCallback = progressCallback.has_value();
+  std::unique_lock<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   RNFSTurboPlatformHelper::downloadCallbacks[jobId].completeCallback = completeCallback;
   RNFSTurboPlatformHelper::downloadCallbacks[jobId].errorCallback = errorCallback;
   if (hasBeginCallback) {
@@ -491,6 +501,7 @@ void RNFSTurboPlatformHelper::downloadFile(
   if (hasProgressCallback) {
     RNFSTurboPlatformHelper::downloadCallbacks[jobId].progressCallback = progressCallback.value();
   }
+  lock.unlock();
 
   jniEnv->CallVoidMethod(
     jniObj,
@@ -591,6 +602,7 @@ void RNFSTurboPlatformHelper::uploadFiles(
   }
   bool hasBeginCallback = beginCallback.has_value();
   bool hasProgressCallback = progressCallback.has_value();
+  std::unique_lock<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   RNFSTurboPlatformHelper::uploadCallbacks[jobId].completeCallback = completeCallback;
   RNFSTurboPlatformHelper::uploadCallbacks[jobId].errorCallback = errorCallback;
   if (hasBeginCallback) {
@@ -599,6 +611,7 @@ void RNFSTurboPlatformHelper::uploadFiles(
   if (hasProgressCallback) {
     RNFSTurboPlatformHelper::uploadCallbacks[jobId].progressCallback = progressCallback.value();
   }
+  lock.unlock();
 
   jniEnv->CallVoidMethod(
     jniObj,
@@ -667,7 +680,9 @@ void RNFSTurboPlatformHelper::scanFile(int jobId, const char *path, RNFSTurboSca
     "scanFile",
     "(ILjava/lang/String;)V"
   );
+  std::unique_lock<std::mutex> lock(RNFSTurboPlatformHelper::callbacksMutex);
   RNFSTurboPlatformHelper::scanCallbacks[jobId] = scanCallback;
+  lock.unlock();
   jniEnv->CallVoidMethod(
     jniObj,
     mid,
@@ -677,6 +692,7 @@ void RNFSTurboPlatformHelper::scanFile(int jobId, const char *path, RNFSTurboSca
   jniEnv->DeleteLocalRef(jniCls);
   if (jniEnv->ExceptionCheck()) {
     jniEnv->ExceptionClear();
+    lock.lock();
     std::map<int, RNFSTurboScanCallback>::iterator it = RNFSTurboPlatformHelper::scanCallbacks.find(jobId);
     if (it != RNFSTurboPlatformHelper::scanCallbacks.end()) {
       RNFSTurboPlatformHelper::scanCallbacks.erase(it);
