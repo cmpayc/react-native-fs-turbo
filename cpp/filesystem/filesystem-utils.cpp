@@ -9,27 +9,29 @@
 
 namespace cmpayc::rnfsturbo {
 
+static size_t prepareRead(std::ifstream& inputFile, int offset, int length) {
+  inputFile.seekg(0, std::ios::end);
+  std::streamoff fileSize = inputFile.tellg();
+  std::streamoff start = offset > 0 ? offset : 0;
+  if (fileSize <= 0 || start >= fileSize) {
+    return 0;
+  }
+  std::streamoff available = fileSize - start;
+  inputFile.seekg(start);
+  return static_cast<size_t>(length > 0 && length < available ? length : available);
+}
+
 std::string readFile(const char* filePath, int offset, int length) {
   std::ifstream inputFile(filePath, std::ios::binary);
   if (!inputFile.is_open()) {
     throw strerror(errno);
   }
-  inputFile.seekg(0, std::ios::end);
-  size_t size = inputFile.tellg();
-  if (length != 0) {
-    if (length > size - offset) {
-      size = size - offset;
-    } else {
-      size = length;
-    }
+  size_t size = prepareRead(inputFile, offset, length);
+  std::string buffer(size, '\0');
+  if (size > 0) {
+    inputFile.read(&buffer[0], size);
+    buffer.resize(static_cast<size_t>(inputFile.gcount()));
   }
-  std::string buffer(size, ' ');
-  if (offset > 0) {
-    inputFile.seekg(offset);
-  } else {
-    inputFile.seekg(0);
-  }
-  inputFile.read(&buffer[0], size);
 
   inputFile.close();
 
@@ -44,34 +46,14 @@ std::vector<T> readFileUint(const char* filePath, int offset, int length) {
   if (!inputFile.is_open()) {
     throw strerror(errno);
   }
-  
-  inputFile.seekg(0, std::ios::end);
-  size_t size = inputFile.tellg();
-  if (length != 0) {
-    if (length > size - offset) {
-      size = size - offset;
-    } else {
-      size = length;
-    }
-  }
 
-  if (offset > 0) {
-    inputFile.seekg(offset);
-  } else {
-    inputFile.seekg(0);
-  }
-
-  if constexpr (std::is_same_v<T, uint8_t>) {
-    if (offset == 0 && length == 0) {
-      std::vector<T> vBuffer((std::istreambuf_iterator<char>(inputFile)), (std::istreambuf_iterator<char>()));
-      inputFile.close();
-      return vBuffer;
-    }
-  }
-
+  size_t size = prepareRead(inputFile, offset, length);
   std::vector<T> vBuffer(size / sizeof(T));
-  inputFile.read(reinterpret_cast<char*>(vBuffer.data()), vBuffer.size() * sizeof(T));
-  
+  if (!vBuffer.empty()) {
+    inputFile.read(reinterpret_cast<char*>(vBuffer.data()), vBuffer.size() * sizeof(T));
+    vBuffer.resize(static_cast<size_t>(inputFile.gcount()) / sizeof(T));
+  }
+
   // Only convert for uint16_t or uint32_t
   if constexpr (std::is_same_v<T, uint16_t> || std::is_same_v<T, uint32_t>) {
       for (auto& x : vBuffer) {
@@ -100,40 +82,12 @@ std::vector<float> readFileFloat32(const char* filePath, int offset, int length)
   if (!inputFile.is_open()) {
     throw strerror(errno);
   }
-  if (offset > 0 || length > 0) {
-    std::vector<float> vBuffer;
-    inputFile.seekg(0, std::ios::end);
-    size_t size = inputFile.tellg();
-    if (length != 0) {
-      if (length > size - offset) {
-        size = size - offset;
-      } else {
-        size = length;
-      }
-    }
-    if (offset > 0) {
-      inputFile.seekg(offset);
-    } else {
-      inputFile.seekg(0);
-    }
-    vBuffer.resize(std::floor(size / sizeof(float)));
-    if (!vBuffer.empty()) {
-      inputFile.read(reinterpret_cast<char*>(vBuffer.data()), vBuffer.size() * sizeof(float));
-    }
 
-    inputFile.close();
-    return vBuffer;
-  }
-  
-  std::vector<float> vBuffer;
-  inputFile.seekg(0, std::ios::end);
-  size_t size = inputFile.tellg();
-  if (size >= 4) {
-    inputFile.seekg(0);
-    vBuffer.resize(std::floor(size / sizeof(float)));
-    if (!vBuffer.empty()) {
-      inputFile.read(reinterpret_cast<char*>(vBuffer.data()), vBuffer.size() * sizeof(float));
-    }
+  size_t size = prepareRead(inputFile, offset, length);
+  std::vector<float> vBuffer(size / sizeof(float));
+  if (!vBuffer.empty()) {
+    inputFile.read(reinterpret_cast<char*>(vBuffer.data()), vBuffer.size() * sizeof(float));
+    vBuffer.resize(static_cast<size_t>(inputFile.gcount()) / sizeof(float));
   }
 
   inputFile.close();
