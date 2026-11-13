@@ -16,13 +16,13 @@
 
 namespace cmpayc::rnfsturbo {
 
-typedef std::function<void (int jobId, int statusCode, float bytesWritten)> RNFSTurboCompleteDownloadCallback;
+typedef std::function<void (int jobId, int statusCode, double bytesWritten)> RNFSTurboCompleteDownloadCallback;
 
 typedef std::function<void (int jobId, const char* errorMessage)> RNFSTurboErrorCallback;
 
-typedef std::function<void (int jobId, int statusCode, float contentLength, std::map<std::string, std::string> headers)> RNFSTurboBeginDownloadCallback;
+typedef std::function<void (int jobId, int statusCode, double contentLength, std::map<std::string, std::string> headers)> RNFSTurboBeginDownloadCallback;
 
-typedef std::function<void (int jobId, float contentLength, float bytesWritten)> RNFSTurboProgressDownloadCallback;
+typedef std::function<void (int jobId, double contentLength, double bytesWritten)> RNFSTurboProgressDownloadCallback;
 
 typedef std::function<void (int jobId)> RNFSTurboResumableDownloadCallback;
 
@@ -30,14 +30,14 @@ typedef std::function<void (int jobId, int statusCode, std::map<std::string, std
 
 typedef std::function<void (int jobId)> RNFSTurboBeginUploadCallback;
 
-typedef std::function<void (int jobId, float totalBytesExpectedToSend, float totalBytesSent)> RNFSTurboProgressUploadCallback;
+typedef std::function<void (int jobId, double totalBytesExpectedToSend, double totalBytesSent)> RNFSTurboProgressUploadCallback;
 
 typedef std::function<void (int jobId, std::string path)> RNFSTurboScanCallback;
 
 struct ReadDirItem {
   std::string name;
   std::string path;
-  float size;
+  double size;
   bool isDirectory;
 };
 

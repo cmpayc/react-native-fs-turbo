@@ -189,7 +189,7 @@ void RNFSTurboPlatformHelper::downloadFile(
       return;
     }
     callbackFired = YES;
-    completeCallback(jobId, [statusCode intValue], [bytesWritten floatValue]);
+    completeCallback(jobId, [statusCode intValue], [bytesWritten doubleValue]);
   };
 
   params.errorCallback = ^(NSError* error) {
@@ -207,13 +207,13 @@ void RNFSTurboPlatformHelper::downloadFile(
         NSString *headerValue = [nsHeaders objectForKey:key];
         headers[[key UTF8String]] = [headerValue UTF8String];
       }
-      beginCallback.value()(jobId, [statusCode intValue], [contentLength floatValue], headers);
+      beginCallback.value()(jobId, [statusCode intValue], [contentLength doubleValue], headers);
     };
   }
 
   if (progressCallback.has_value()) {
     params.progressCallback = ^(NSNumber* contentLength, NSNumber* bytesWritten) {
-      progressCallback.value()(jobId, [contentLength floatValue], [bytesWritten floatValue]);
+      progressCallback.value()(jobId, [contentLength doubleValue], [bytesWritten doubleValue]);
     };
   }
 
@@ -354,7 +354,7 @@ void RNFSTurboPlatformHelper::uploadFiles(
 
   if (progressCallback.has_value()) {
     params.progressCallback = ^(NSNumber* totalBytesExpectedToSend, NSNumber* totalBytesSent) {
-      progressCallback.value()(jobId, [totalBytesExpectedToSend floatValue], [totalBytesSent floatValue]);
+      progressCallback.value()(jobId, [totalBytesExpectedToSend doubleValue], [totalBytesSent doubleValue]);
     };
   }
 
