@@ -149,7 +149,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
     RNFSTurboPlatformHelper::downloadCallbacks[jobId].completeCallback(
       jobId,
       statusCode,
-      static_cast<float>(bytesWritten)
+      static_cast<double>(bytesWritten)
     );
     RNFSTurboPlatformHelper::downloadCallbacks.erase(it);
   }
@@ -191,7 +191,7 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
     RNFSTurboPlatformHelper::downloadCallbacks[jobId].beginCallback(
       jobId,
       statusCode,
-      static_cast<float>(contentLength),
+      static_cast<double>(contentLength),
       headers
     );
   }
@@ -211,8 +211,8 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_downloa
   if (it != RNFSTurboPlatformHelper::downloadCallbacks.end()) {
     RNFSTurboPlatformHelper::downloadCallbacks[jobId].progressCallback(
       jobId,
-      static_cast<float>(contentLength),
-      static_cast<float>(bytesWritten)
+      static_cast<double>(contentLength),
+      static_cast<double>(bytesWritten)
     );
   }
 }
@@ -266,8 +266,8 @@ JNIEXPORT void JNICALL Java_com_cmpayc_rnfsturbo_RNFSTurboPlatformHelper_uploadP
   if (it != RNFSTurboPlatformHelper::uploadCallbacks.end()) {
     RNFSTurboPlatformHelper::uploadCallbacks[jobId].progressCallback(
       jobId,
-      static_cast<float>(totalBytesExpectedToSend),
-      static_cast<float>(totalBytesSent)
+      static_cast<double>(totalBytesExpectedToSend),
+      static_cast<double>(totalBytesSent)
     );
   }
 }
@@ -352,9 +352,9 @@ std::vector<ReadDirItem> RNFSTurboPlatformHelper::readDirAssets(const char* dirP
     const char* path = jniEnv->GetStringUTFChars(pathStr, nullptr);
     const char* size = jniEnv->GetStringUTFChars(sizeStr, nullptr);
     const char* isDirectoryChr = jniEnv->GetStringUTFChars(isDirectoryStr, nullptr);
-    float floatSize = std::stof(size);
+    double doubleSize = std::stod(size);
     bool isDirectory = std::strcmp(isDirectoryChr, "1") == 0;
-    ReadDirItem dirItem{name, path, floatSize, isDirectory};
+    ReadDirItem dirItem{name, path, doubleSize, isDirectory};
     files.push_back(dirItem);
     jniEnv->ReleaseStringUTFChars(nameStr, name);
     jniEnv->DeleteLocalRef(nameStr);

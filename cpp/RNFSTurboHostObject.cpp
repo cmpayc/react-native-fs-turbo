@@ -67,9 +67,9 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
 
         jsi::Object obj = jsi::Object(runtime);
         obj.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, filePath));
-        obj.setProperty(runtime, "ctime", jsi::Value(static_cast<float>(t_stat.st_ctime)));
-        obj.setProperty(runtime, "mtime", jsi::Value(static_cast<float>(t_stat.st_mtime)));
-        obj.setProperty(runtime, "size", jsi::Value(static_cast<float>(t_stat.st_size)));
+        obj.setProperty(runtime, "ctime", jsi::Value(static_cast<double>(t_stat.st_ctime)));
+        obj.setProperty(runtime, "mtime", jsi::Value(static_cast<double>(t_stat.st_mtime)));
+        obj.setProperty(runtime, "size", jsi::Value(static_cast<double>(t_stat.st_size)));
         obj.setProperty(runtime, "mode", jsi::Value(static_cast<int>(t_stat.st_mode)));
         obj.setProperty(runtime, "originalFilepath", jsi::String::createFromUtf8(runtime, filePath));
         if (isNewFormat) {
@@ -196,17 +196,17 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             obj.setProperty(
               runtime,
               "ctime",
-              jsi::Value(static_cast<float>(isAndroidAssets ? 0 : t_stat.st_ctime))
+              jsi::Value(static_cast<double>(isAndroidAssets ? 0 : t_stat.st_ctime))
             );
             obj.setProperty(
               runtime,
               "mtime",
-              jsi::Value(static_cast<float>(isAndroidAssets ? 0 : t_stat.st_mtime))
+              jsi::Value(static_cast<double>(isAndroidAssets ? 0 : t_stat.st_mtime))
             );
             obj.setProperty(
               runtime,
               "size",
-              jsi::Value(static_cast<float>(isAndroidAssets ? assetsDirItemsIt->size : t_stat.st_size))
+              jsi::Value(static_cast<double>(isAndroidAssets ? assetsDirItemsIt->size : t_stat.st_size))
             );
             if (isNewFormat) {
               obj.setProperty(
@@ -1335,7 +1335,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         RNFSTurboPlatformHelper::jobId += 1;
         int jobId = RNFSTurboPlatformHelper::jobId;
         
-        RNFSTurboCompleteDownloadCallback completeCallback = [&runtime, completeFunc, this](int jobId, int statusCode, float bytesWritten) -> void {
+        RNFSTurboCompleteDownloadCallback completeCallback = [&runtime, completeFunc, this](int jobId, int statusCode, double bytesWritten) -> void {
           _jsInvoker->invokeAsync([&runtime, completeFunc, jobId, statusCode, bytesWritten]() {
             jsi::Object result = jsi::Object(runtime);
             result.setProperty(runtime, "jobId", jsi::Value(jobId));
@@ -1354,7 +1354,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         
         std::optional<RNFSTurboBeginDownloadCallback> beginCallback = std::nullopt;
         if (beginCallbackFunc) {
-          beginCallback = [&runtime, beginCallbackFunc, this](int jobId, int statusCode, float contentLength, std::map<std::string, std::string> headers) -> void {
+          beginCallback = [&runtime, beginCallbackFunc, this](int jobId, int statusCode, double contentLength, std::map<std::string, std::string> headers) -> void {
             _jsInvoker->invokeAsync([&runtime, beginCallbackFunc, jobId, statusCode, contentLength, headers]() {
               jsi::Object result = jsi::Object(runtime);
               result.setProperty(runtime, "jobId", jsi::Value(jobId));
@@ -1371,7 +1371,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         }
         std::optional<RNFSTurboProgressDownloadCallback> progressCallback = std::nullopt;
         if (progressCallbackFunc) {
-          progressCallback = [&runtime, progressCallbackFunc, this](int jobId, float contentLength, float bytesWritten) -> void {
+          progressCallback = [&runtime, progressCallbackFunc, this](int jobId, double contentLength, double bytesWritten) -> void {
             _jsInvoker->invokeAsync([&runtime, progressCallbackFunc, jobId, contentLength, bytesWritten]() {
               jsi::Object result = jsi::Object(runtime);
               result.setProperty(runtime, "jobId", jsi::Value(jobId));
@@ -1657,7 +1657,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         }
         std::optional<RNFSTurboProgressUploadCallback> progressCallback = std::nullopt;
         if (progressCallbackFunc) {
-          progressCallback = [&runtime, progressCallbackFunc, this](int jobId, float totalBytesExpectedToSend, float totalBytesSent) -> void {
+          progressCallback = [&runtime, progressCallbackFunc, this](int jobId, double totalBytesExpectedToSend, double totalBytesSent) -> void {
             _jsInvoker->invokeAsync([&runtime, progressCallbackFunc, jobId, totalBytesExpectedToSend, totalBytesSent]() {
               jsi::Object result = jsi::Object(runtime);
               result.setProperty(runtime, "jobId", jsi::Value(jobId));
@@ -1721,13 +1721,13 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           FSInfo fsInfo = platformHelper->getFSInfo();
           
           jsi::Object result = jsi::Object(runtime);
-          result.setProperty(runtime, "totalSpace", jsi::Value(static_cast<float>(fsInfo.totalSpace)));
-          result.setProperty(runtime, "freeSpace", jsi::Value(static_cast<float>(fsInfo.freeSpace)));
+          result.setProperty(runtime, "totalSpace", jsi::Value(static_cast<double>(fsInfo.totalSpace)));
+          result.setProperty(runtime, "freeSpace", jsi::Value(static_cast<double>(fsInfo.freeSpace)));
           if (fsInfo.totalSpaceEx.has_value()) {
-            result.setProperty(runtime, "totalSpaceEx", jsi::Value(static_cast<float>(fsInfo.totalSpaceEx.value())));
+            result.setProperty(runtime, "totalSpaceEx", jsi::Value(static_cast<double>(fsInfo.totalSpaceEx.value())));
           }
           if (fsInfo.freeSpaceEx.has_value()) {
-            result.setProperty(runtime, "freeSpaceEx", jsi::Value(static_cast<float>(fsInfo.freeSpaceEx.value())));
+            result.setProperty(runtime, "freeSpaceEx", jsi::Value(static_cast<double>(fsInfo.freeSpaceEx.value())));
           }
 #ifdef RNFSTURBO_USE_ENCRYPTION
           result.setProperty(runtime, "encryptionEnabled", jsi::Value(true));
