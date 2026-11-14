@@ -909,7 +909,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
 
         int width = arguments[2].asNumber();
-        int height = arguments[2].asNumber();
+        int height = arguments[3].asNumber();
         float scale{1.0};
         if (count > 4 && arguments[4].isNumber()) {
           scale = arguments[4].asNumber();
