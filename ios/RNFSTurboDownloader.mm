@@ -99,10 +99,12 @@ static NSMutableDictionary *completionHandlers;
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite
 {
   NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)downloadTask.response;
-  if (_params.beginCallback && !_statusCode) {
+  if (!_statusCode) {
     _statusCode = [NSNumber numberWithLong:httpResponse.statusCode];
     _contentLength = [NSNumber numberWithLong:httpResponse.expectedContentLength];
-    return _params.beginCallback(_statusCode, _contentLength, httpResponse.allHeaderFields);
+    if (_params.beginCallback) {
+      _params.beginCallback(_statusCode, _contentLength, httpResponse.allHeaderFields);
+    }
   }
 
   if (_params.progressCallback && [_statusCode isEqualToNumber:[NSNumber numberWithInt:200]]) {
