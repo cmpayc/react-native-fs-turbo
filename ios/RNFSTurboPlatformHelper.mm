@@ -27,10 +27,8 @@ namespace cmpayc::rnfsturbo {
 RNFSTurboPlatformHelper::RNFSTurboPlatformHelper() {}
 
 void RNFSTurboPlatformHelper::copyAssetsFileIOS(const char* imageUri, const char* destPath, int width, int height, float scale, float compression, const char* resizeMode) {
-  NSString *nsImageUri = [NSString stringWithCString:imageUri
-                                            encoding:[NSString defaultCStringEncoding]];
-  NSString *nsDestPath = [NSString stringWithCString:destPath
-                                            encoding:[NSString defaultCStringEncoding]];
+  NSString *nsImageUri = [NSString stringWithUTF8String:imageUri];
+  NSString *nsDestPath = [NSString stringWithUTF8String:destPath];
   NSURL* url = [NSURL URLWithString:nsImageUri];
   __block NSError *nsError = nil;
   
@@ -91,10 +89,8 @@ void RNFSTurboPlatformHelper::copyAssetsFileIOS(const char* imageUri, const char
 }
 
 void RNFSTurboPlatformHelper::copyAssetsVideoIOS(const char* videoUri, const char* destPath) {
-  NSString *nsVideoUri = [NSString stringWithCString:videoUri
-                                                     encoding:[NSString defaultCStringEncoding]];
-  NSString *nsDestPath = [NSString stringWithCString:destPath
-                                                     encoding:[NSString defaultCStringEncoding]];
+  NSString *nsVideoUri = [NSString stringWithUTF8String:videoUri];
+  NSString *nsDestPath = [NSString stringWithUTF8String:destPath];
 
   NSURL* url = [NSURL URLWithString:nsVideoUri];
   __block NSError *nsError = nil;
@@ -162,10 +158,8 @@ void RNFSTurboPlatformHelper::downloadFile(
   std::optional<RNFSTurboProgressDownloadCallback> progressCallback,
   std::optional<RNFSTurboResumableDownloadCallback> resumableCallback
 ) {
-  NSString *nsFromUrl = [NSString stringWithCString:fromUrl
-                                            encoding:[NSString defaultCStringEncoding]];
-  NSString *nsToFile = [NSString stringWithCString:toFile
-                                        encoding:[NSString defaultCStringEncoding]];
+  NSString *nsFromUrl = [NSString stringWithUTF8String:fromUrl];
+  NSString *nsToFile = [NSString stringWithUTF8String:toFile];
   NSMutableDictionary *nsHeaders = [[NSMutableDictionary alloc] init];
   for (const auto& [headerKey, headerValue] : headers) {
     [nsHeaders setValue:@(headerValue.c_str()) forKey:@(headerKey.c_str())];
@@ -289,8 +283,7 @@ void RNFSTurboPlatformHelper::uploadFiles(
   std::optional<RNFSTurboBeginUploadCallback> beginCallback,
   std::optional<RNFSTurboProgressUploadCallback> progressCallback
 ) {
-  NSString *nsToUrl = [NSString stringWithCString:toUrl
-                                            encoding:[NSString defaultCStringEncoding]];
+  NSString *nsToUrl = [NSString stringWithUTF8String:toUrl];
   NSMutableArray *nsFiles = [[NSMutableArray alloc] init];
   for (int i = 0; i < filesNum; i++) {
     NSMutableDictionary *nsFile = [[NSMutableDictionary alloc] init];
@@ -308,8 +301,7 @@ void RNFSTurboPlatformHelper::uploadFiles(
   for (const auto& [fieldKey, fieldValue] : fields) {
     [nsFields setValue:@(fieldValue.c_str()) forKey:@(fieldKey.c_str())];
   }
-  NSString *nsMethod = [NSString stringWithCString:method
-                                            encoding:[NSString defaultCStringEncoding]];
+  NSString *nsMethod = [NSString stringWithUTF8String:method];
   RNFSTurboUploadParams* params = [RNFSTurboUploadParams alloc];
   params.toUrl = nsToUrl;
   params.files = nsFiles;
@@ -398,8 +390,7 @@ FSInfo RNFSTurboPlatformHelper::getFSInfo() {
 }
 
 const char* RNFSTurboPlatformHelper::pathForGroup(const char* groupIdentifier) {
-  NSString *nsGroupIdentifier = [NSString stringWithCString:groupIdentifier
-                                                  encoding:[NSString defaultCStringEncoding]];
+  NSString *nsGroupIdentifier = [NSString stringWithUTF8String:groupIdentifier];
   NSURL *groupURL = [[NSFileManager defaultManager]containerURLForSecurityApplicationGroupIdentifier: nsGroupIdentifier];
   
   if (groupURL) {
