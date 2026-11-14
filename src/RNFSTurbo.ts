@@ -91,7 +91,7 @@ class RNFSTurbo implements RNFSTurboInterface {
   }
 
   get DownloadDirectoryPath(): string {
-    return this.configuration.mainBundlePath;
+    return this.configuration.downloadDirectoryPath;
   }
 
   get PicturesDirectoryPath(): string {
