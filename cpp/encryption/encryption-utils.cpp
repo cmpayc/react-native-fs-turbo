@@ -51,7 +51,7 @@ std::unique_ptr<Mode::MODE> createCipherMode(
     } else if (padding == "zero") {
       return std::make_unique<Mode::CFB<BlockCipher::AES, Padding::ZeroNulls>>(key, keyLen);
     } else if (padding == "no") {
-      return std::make_unique<Mode::CBC<BlockCipher::AES, Padding::NoPadding>>(key, keyLen);
+      return std::make_unique<Mode::CFB<BlockCipher::AES, Padding::NoPadding>>(key, keyLen);
     }
     return std::make_unique<Mode::CFB<BlockCipher::AES, Padding::PKCS_5_7>>(key, keyLen);
   }
@@ -100,7 +100,7 @@ void processEncryptionOptions(
   if (encrypted && propName != "readFile" && propName != "writeFile") {
     throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Encryption is only available for the readFile and writeFile methods"));
   }
-  if (encrypted && passphraseLength != 16 && passphraseLength != 25 && passphraseLength != 32) {
+  if (encrypted && passphraseLength != 16 && passphraseLength != 24 && passphraseLength != 32) {
     throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", propName.c_str(), "Passphrase length should be 16, 24 or 32"));
   }
   if (optionsObject.hasProperty(runtime, "iv")) {
