@@ -123,6 +123,12 @@ Modified by Sergei Kazakov on 31.10.24.
   NSURLSessionConfiguration *sessionConfiguration = [NSURLSessionConfiguration defaultSessionConfiguration];
   NSURLSession *session = [NSURLSession sessionWithConfiguration:sessionConfiguration delegate:(id)self delegateQueue:[NSOperationQueue mainQueue]];
   _task = [session dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+      if (error != nil) {
+        if (error.code == NSURLErrorCancelled) {
+          error = [NSError errorWithDomain:@"RNFS" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"Upload has been aborted" }];
+        }
+        return self->_params.errorCallback(error);
+      }
       NSString * str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
       return self->_params.completeCallback(str, response);
   }];
