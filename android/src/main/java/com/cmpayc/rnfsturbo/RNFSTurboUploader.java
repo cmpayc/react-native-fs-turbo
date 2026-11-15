@@ -158,6 +158,10 @@ public class RNFSTurboUploader extends AsyncTask<RNFSTurboUploadParams, int[], R
         FileChannel fileChannel = fileStream.getChannel();
 
         while (bytesRead < fileLength) {
+          if (mAbort.get()) {
+            fileStream.close();
+            throw new Exception("Upload has been aborted");
+          }
           long transferredBytes = fileChannel.transferTo(bytesRead, bufferSize, requestChannel);
           bytesRead += transferredBytes;
 
