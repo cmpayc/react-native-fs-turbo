@@ -307,38 +307,24 @@ class RNFSTurbo implements RNFSTurboInterface {
     completeCallback?: T,
     errorCallback?: DownloadErrorFunc,
   ): OverloadedDownloadResult<T> {
-    const funcResult: {
-      resolve: DownloadResult | null;
-      reject: DownloadError | null;
-    } = {
-      resolve: null,
-      reject: null,
-    };
     const func = this.getFunctionFromCache("downloadFile");
+    let resolvePromise: ((res: DownloadResult) => void) | undefined;
+    let rejectPromise: ((res: DownloadError) => void) | undefined;
+    const promise = !completeCallback
+      ? new Promise<DownloadResult>((resolve, reject) => {
+          resolvePromise = resolve;
+          rejectPromise = reject;
+        })
+      : undefined;
     const tmpCallbackFunc =
       completeCallback ||
       ((res: DownloadResult) => {
-        funcResult.resolve = res;
+        resolvePromise?.(res);
       });
-    const tmpErrorFunc =
-      errorCallback ||
-      ((res: DownloadError) => {
-        funcResult.reject = res;
-      });
-
-    const promise = !completeCallback
-      ? new Promise<DownloadResult>((resolve, reject) => {
-          const callbackInterval = setInterval(() => {
-            if (funcResult.resolve) {
-              clearInterval(callbackInterval);
-              resolve(funcResult.resolve);
-            } else if (funcResult.reject) {
-              clearInterval(callbackInterval);
-              reject(funcResult.reject);
-            }
-          }, 100);
-        })
-      : undefined;
+    const tmpErrorFunc = (res: DownloadError) => {
+      errorCallback?.(res);
+      rejectPromise?.(res);
+    };
 
     const jobId: any = func(options, tmpCallbackFunc, tmpErrorFunc);
 
@@ -377,38 +363,24 @@ class RNFSTurbo implements RNFSTurboInterface {
     completeCallback?: T,
     errorCallback?: UploadErrorFunc,
   ): OverloadedUploadResult<T> {
-    const funcResult: {
-      resolve: UploadResult | null;
-      reject: UploadError | null;
-    } = {
-      resolve: null,
-      reject: null,
-    };
     const func = this.getFunctionFromCache("uploadFiles");
+    let resolvePromise: ((res: UploadResult) => void) | undefined;
+    let rejectPromise: ((res: UploadError) => void) | undefined;
+    const promise = !completeCallback
+      ? new Promise<UploadResult>((resolve, reject) => {
+          resolvePromise = resolve;
+          rejectPromise = reject;
+        })
+      : undefined;
     const tmpCallbackFunc =
       completeCallback ||
       ((res: UploadResult) => {
-        funcResult.resolve = res;
+        resolvePromise?.(res);
       });
-    const tmpErrorFunc =
-      errorCallback ||
-      ((res: UploadError) => {
-        funcResult.reject = res;
-      });
-
-    const promise = !completeCallback
-      ? new Promise<UploadResult>((resolve, reject) => {
-          const callbackInterval = setInterval(() => {
-            if (funcResult.resolve) {
-              clearInterval(callbackInterval);
-              resolve(funcResult.resolve);
-            } else if (funcResult.reject) {
-              clearInterval(callbackInterval);
-              reject(funcResult.reject);
-            }
-          }, 100);
-        })
-      : undefined;
+    const tmpErrorFunc = (res: UploadError) => {
+      errorCallback?.(res);
+      rejectPromise?.(res);
+    };
 
     const jobId: any = func(options, tmpCallbackFunc, tmpErrorFunc);
 
@@ -436,28 +408,18 @@ class RNFSTurbo implements RNFSTurboInterface {
     path: string,
     completeCallback?: T,
   ): OverloadedScanResult<T> {
-    const funcResult: {
-      resolve: ScanResult | null;
-    } = {
-      resolve: null,
-    };
     const func = this.getFunctionFromCache("scanFile");
+    let resolvePromise: ((path: string) => void) | undefined;
+    const promise = !completeCallback
+      ? new Promise<ScanResult | string>((resolve) => {
+          resolvePromise = resolve;
+        })
+      : undefined;
     const tmpCallbackFunc =
       completeCallback ||
       ((res: ScanResult) => {
-        funcResult.resolve = res;
+        resolvePromise?.(res.path);
       });
-
-    const promise = !completeCallback
-      ? new Promise<ScanResult | string>((resolve) => {
-          const callbackInterval = setInterval(() => {
-            if (funcResult.resolve) {
-              clearInterval(callbackInterval);
-              resolve(funcResult.resolve.path);
-            }
-          }, 100);
-        })
-      : undefined;
 
     const jobId: any = func(path, tmpCallbackFunc);
 
