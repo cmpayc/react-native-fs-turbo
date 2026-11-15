@@ -355,7 +355,7 @@ void RNFSTurboPlatformHelper::uploadFiles(
   }
 
   RNFSTurboUploader* uploader = [RNFSTurboUploader alloc];
-
+  [RNFSTurboPlatformHelper::uploaders setValue:uploader forKey:[@(jobId) stringValue]];
   [uploader uploadFiles:params];
 }
 
