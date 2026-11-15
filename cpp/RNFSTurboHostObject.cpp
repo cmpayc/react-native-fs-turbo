@@ -1346,9 +1346,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         };
         
         RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc, this](int jobId, const char* errorMessage) -> void {
-          std::string message = RNFSTurboLogger::sprintf("%s: %s", "downloadFile", errorMessage != nullptr ? errorMessage : "Unknown error");
-          _jsInvoker->invokeAsync([&runtime, errorFunc, message = std::move(message)]() {
-            errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, message));
+          std::string message = errorMessage != nullptr ? errorMessage : "Unknown error";
+          _jsInvoker->invokeAsync([&runtime, errorFunc, jobId, message = std::move(message)]() {
+            jsi::Object result = jsi::Object(runtime);
+            result.setProperty(runtime, "jobId", jsi::Value(jobId));
+            result.setProperty(runtime, "errorMessage", jsi::String::createFromUtf8(runtime, message));
+            errorFunc->call(runtime, std::move(result));
           });
         };
         
@@ -1411,7 +1414,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             resumableCallback
           );
         } catch (const char* errorMessage) {
-          errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, errorMessage));
+          jsi::Object result = jsi::Object(runtime);
+          result.setProperty(runtime, "jobId", jsi::Value(jobId));
+          result.setProperty(runtime, "errorMessage", jsi::String::createFromUtf8(runtime, errorMessage));
+          errorFunc->call(runtime, std::move(result));
         }
 
         return jsi::Value(jobId);
@@ -1639,9 +1645,12 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         };
         
         RNFSTurboErrorCallback errorCallback = [&runtime, errorFunc, this](int jobId, const char* errorMessage) -> void {
-          std::string message = RNFSTurboLogger::sprintf("%s: %s", "uploadFiles", errorMessage != nullptr ? errorMessage : "Unknown error");
-          _jsInvoker->invokeAsync([&runtime, errorFunc, message = std::move(message)]() {
-            errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, message));
+          std::string message = errorMessage != nullptr ? errorMessage : "Unknown error";
+          _jsInvoker->invokeAsync([&runtime, errorFunc, jobId, message = std::move(message)]() {
+            jsi::Object result = jsi::Object(runtime);
+            result.setProperty(runtime, "jobId", jsi::Value(jobId));
+            result.setProperty(runtime, "errorMessage", jsi::String::createFromUtf8(runtime, message));
+            errorFunc->call(runtime, std::move(result));
           });
         };
         
@@ -1684,7 +1693,10 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             progressCallback
           );
         } catch (const char* errorMessage) {
-          errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, errorMessage));
+          jsi::Object result = jsi::Object(runtime);
+          result.setProperty(runtime, "jobId", jsi::Value(jobId));
+          result.setProperty(runtime, "errorMessage", jsi::String::createFromUtf8(runtime, errorMessage));
+          errorFunc->call(runtime, std::move(result));
         }
 
         return jsi::Value(jobId);

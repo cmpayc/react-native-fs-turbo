@@ -233,7 +233,7 @@ public class RNFSTurboPlatformHelper {
             if (res.exception == null) {
               downloadCompleteCallback(jobId, res.statusCode, (double)res.bytesWritten);
             } else {
-              downloadErrorCallback(jobId, res.exception.toString());
+              downloadErrorCallback(jobId, errorMessage(res.exception));
             }
             downloaders.remove(jobId);
           }
@@ -270,8 +270,13 @@ public class RNFSTurboPlatformHelper {
       downloaders.put(jobId, downloader);
     } catch (Exception ex) {
       ex.printStackTrace();
-      downloadErrorCallback(jobId, ex.toString());
+      downloadErrorCallback(jobId, errorMessage(ex));
     }
+  }
+
+  private static String errorMessage(Exception ex) {
+    String message = ex.getMessage();
+    return message != null ? message : ex.toString();
   }
 
   public void stopDownload(int jobId) {
@@ -279,7 +284,6 @@ public class RNFSTurboPlatformHelper {
 
     if (downloader != null) {
       downloader.stop();
-      downloaders.remove(jobId);
     }
   }
 
@@ -310,7 +314,7 @@ public class RNFSTurboPlatformHelper {
           if (res.exception == null) {
             uploadCompleteCallback(jobId, res.statusCode, new HashMap<String, String>(res.headers), res.body);
           } else {
-            uploadErrorCallback(jobId, res.exception.toString());
+            uploadErrorCallback(jobId, errorMessage(res.exception));
           }
           uploaders.remove(jobId);
         }
@@ -339,7 +343,7 @@ public class RNFSTurboPlatformHelper {
       uploaders.put(jobId, uploader);
     } catch (Exception ex) {
       ex.printStackTrace();
-      uploadErrorCallback(jobId, ex.toString());
+      uploadErrorCallback(jobId, errorMessage(ex));
     }
   }
 
