@@ -19,6 +19,7 @@
     "android/build.gradle",
     "android/CMakeLists.txt",
     "android/gradle.properties",
+    "android/proguard-rules.pro",
     "cpp/**/*.h",
     "cpp/**/*.hpp",
     "cpp/**/*.cpp",
