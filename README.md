@@ -566,7 +566,7 @@ Copies the file named `filename` in the Android app's res folder and copies it t
 
 Note: Will overwrite destPath if it already exists.
 
-### (iOS only) `copyAssetsFileIOS(imageUri: string, destPath: string, width: number, height: number, scale?: number, compression?: number, resizeMode?: string): string | undefined`
+### (iOS only) `copyAssetsFileIOS(imageUri: string, destPath: string, width: number, height: number, scale?: number, compression?: number, resizeMode?: string, isAsync?: boolean = false): string | Promise<string>`
 
 *Not available on Mac Catalyst.*
 
@@ -576,10 +576,12 @@ Reads an image file from Camera Roll and writes to `destPath`. This method [assu
 
 ##### `imageUri` string (required)
 
-URI of a file in Camera Roll. Can be [either of the following formats](https://github.com/itinance/react-native-fs/blob/f2f8f4a058cd9acfbcac3b8cf1e08fa1e9b09786/RNFSManager.m#L781-L785):
+URI of a file in Camera Roll. Can be one of the following formats:
 
-- `ph://CC95F08C-88C3-4012-9D6D-64A413D254B3/L0/001`
-- `assets-library://asset/asset.JPG?id=CC95F08C-88C3-4012-9D6D-64A413D254B3&ext=JPG`
+- `ph://CC95F08C-88C3-4012-9D6D-64A413D254B3/L0/001`: a Photos asset.
+- A plain file path (with or without `file://`): the file is copied to `destPath` as-is, without resizing or re-encoding.
+
+Note: unlike `react-native-fs`, `assets-library://` URIs are **not supported**. They rely on the deprecated `PHAsset fetchAssetsWithALAssetURLs` API, which Apple has marked for removal. Use `ph://` URIs instead (returned by current pickers such as `@react-native-camera-roll/camera-roll`).
 
 ##### `destPath` string (required)
 
@@ -605,27 +607,51 @@ Quality of copied file's image. The value 0.0 represents the maximum compression
 
 If `resizeMode` is 'contain', copied file's image will be scaled so that its larger dimension fits `width` x `height`. If `resizeMode` is other value than 'contain', the image will be scaled so that it completely fills `width` x `height`. Default is 'contain'. Refer to [PHImageContentMode](https://developer.apple.com/documentation/photokit/phimagecontentmode).
 
+##### `isAsync` boolean (optional)
+
+If `true`, the method runs asynchronously and returns a `Promise`. Default is `false` (synchronous, as in previous versions of this library). See [Sync and async mode](#sync-and-async-mode-of-copyassetsfileios-and-copyassetsvideoios).
+
 #### Return value
 
-##### `Promise<string>`
+##### `string | Promise<string>`
 
-Copied file's URI.
+Copied file's path (`destPath`). Returned directly in sync mode, or as a `Promise` when `isAsync` is `true`.
 
 #### Video-Support
 
 One can use this method also to create a thumbNail from a video in a specific size.
 Currently it is impossible to specify a concrete position, the OS will decide wich
 Thumbnail you'll get then.
-To copy a video from assets-library and save it as a mp4-file, refer to copyAssetsVideoIOS.
+To copy a video from Camera Roll and save it as a file, refer to copyAssetsVideoIOS.
 
 Further information: https://developer.apple.com/reference/photos/phimagemanager/1616964-requestimageforasset
 The promise will on success return the final destination of the file, as it was defined in the destPath-parameter.
 
-### (iOS only) `copyAssetsVideoIOS(videoUri: string, destPath: string): string | undefined`
+### (iOS only) `copyAssetsVideoIOS(videoUri: string, destPath: string, isAsync?: boolean = false): string | Promise<string>`
 
 *Not available on Mac Catalyst.*
 
-Copies a video from assets-library, that is prefixed with 'assets-library://asset/asset.MOV?...' to a specific destination.
+Copies a video from Camera Roll to a specific destination. This method will download the original from iCloud if necessary.
+
+`videoUri` accepts the same formats as `imageUri` in `copyAssetsFileIOS`: a `ph://` URI or a plain file path. `assets-library://` URIs are **not supported** (see `copyAssetsFileIOS`).
+
+Pass `isAsync: true` to run it asynchronously and get a `Promise`. Default is `false` (synchronous).
+
+#### Sync and async mode of `copyAssetsFileIOS` and `copyAssetsVideoIOS`
+
+By default both methods are synchronous, like the rest of this library: they block the JS thread until the file is written, return `destPath` and throw an error on failure.
+
+Fetching an asset from iCloud can take a long time, and the JS thread is blocked for all of it. To avoid that, pass `isAsync: true` as the last argument. The method then returns a `Promise` that resolves with `destPath` once the file is written and rejects if the asset can't be loaded or copied. This matches the behaviour of `react-native-fs`.
+
+```ts
+// Sync (default)
+const path = RNFSTurbo.copyAssetsFileIOS(uri, destPath, 0, 0);
+const videoPath = RNFSTurbo.copyAssetsVideoIOS(uri, destPath);
+
+// Async
+const path = await RNFSTurbo.copyAssetsFileIOS(uri, destPath, 0, 0, 1, 1, "contain", true);
+const videoPath = await RNFSTurbo.copyAssetsVideoIOS(uri, destPath, true);
+```
 
 ### `unlink(filepath: string, checkExistence?: boolean = true): void`
 

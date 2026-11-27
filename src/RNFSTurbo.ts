@@ -12,6 +12,7 @@ import type {
   DownloadError,
   DownloadResultFunc,
   DownloadErrorFunc,
+  OverloadedCopyAssetsResult,
   OverloadedDownloadResult,
   UploadFileOptions,
   UploadResult,
@@ -237,7 +238,7 @@ class RNFSTurbo implements RNFSTurboInterface {
     return func(filepath, destPath);
   }
 
-  copyAssetsFileIOS(
+  copyAssetsFileIOS<T extends boolean | undefined = false>(
     imageUri: string,
     destPath: string,
     width: number,
@@ -245,22 +246,57 @@ class RNFSTurbo implements RNFSTurboInterface {
     scale?: number,
     compression?: number,
     resizeMode?: string,
-  ): string | undefined {
-    const func = this.getFunctionFromCache("copyAssetsFileIOS");
-    return func(
-      imageUri,
-      destPath,
-      width,
-      height,
-      scale,
-      compression,
-      resizeMode,
-    );
+    isAsync?: T,
+  ): OverloadedCopyAssetsResult<T> {
+    // Native function runs synchronously and returns the path, or runs
+    // asynchronously when (resolve, reject) callbacks are passed.
+    const func = this.getFunctionFromCache(
+      "copyAssetsFileIOS",
+    ) as unknown as (...args: unknown[]) => string | undefined;
+    if (!isAsync) {
+      return func(
+        imageUri,
+        destPath,
+        width,
+        height,
+        scale,
+        compression,
+        resizeMode,
+      ) as OverloadedCopyAssetsResult<T>;
+    }
+    return new Promise<string>((resolve, reject) => {
+      func(
+        imageUri,
+        destPath,
+        width,
+        height,
+        scale,
+        compression,
+        resizeMode,
+        resolve,
+        (errorMessage: string) => reject(new Error(errorMessage)),
+      );
+    }) as OverloadedCopyAssetsResult<T>;
   }
 
-  copyAssetsVideoIOS(videoUri: string, destPath: string): string | undefined {
-    const func = this.getFunctionFromCache("copyAssetsVideoIOS");
-    return func(videoUri, destPath);
+  copyAssetsVideoIOS<T extends boolean | undefined = false>(
+    videoUri: string,
+    destPath: string,
+    isAsync?: T,
+  ): OverloadedCopyAssetsResult<T> {
+    // Native function runs synchronously and returns the path, or runs
+    // asynchronously when (resolve, reject) callbacks are passed.
+    const func = this.getFunctionFromCache(
+      "copyAssetsVideoIOS",
+    ) as unknown as (...args: unknown[]) => string | undefined;
+    if (!isAsync) {
+      return func(videoUri, destPath) as OverloadedCopyAssetsResult<T>;
+    }
+    return new Promise<string>((resolve, reject) => {
+      func(videoUri, destPath, resolve, (errorMessage: string) =>
+        reject(new Error(errorMessage)),
+      );
+    }) as OverloadedCopyAssetsResult<T>;
   }
 
   unlink(filepath: string, checkExistence = true): void {

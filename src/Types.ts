@@ -157,6 +157,9 @@ export type OverloadedReadResult<T extends ReadOptions> = T extends
   ? number[]
   : string;
 
+export type OverloadedCopyAssetsResult<T extends boolean | undefined> =
+  T extends true ? Promise<string> : string;
+
 export type OverloadedDownloadResult<T extends DownloadResultFunc> =
   T extends undefined
     ? { jobId: number; promise: Promise<DownloadResult> }
@@ -292,7 +295,7 @@ export interface RNFSTurboInterface {
   copyFile(filepath: string, destPath: string, options?: MoveCopyOptions): void;
   copyFileAssets(filepath: string, destPath: string): void;
   copyFileRes(filepath: string, destPath: string): void;
-  copyAssetsFileIOS(
+  copyAssetsFileIOS<T extends boolean | undefined = false>(
     imageUri: string,
     destPath: string,
     width: number,
@@ -300,8 +303,13 @@ export interface RNFSTurboInterface {
     scale?: number,
     compression?: number,
     resizeMode?: string,
-  ): string | undefined;
-  copyAssetsVideoIOS(videoUri: string, destPath: string): string | undefined;
+    isAsync?: T,
+  ): OverloadedCopyAssetsResult<T>;
+  copyAssetsVideoIOS<T extends boolean | undefined = false>(
+    videoUri: string,
+    destPath: string,
+    isAsync?: T,
+  ): OverloadedCopyAssetsResult<T>;
   unlink(filepath: string, checkExistence?: boolean): void;
   exists(filepath: string): boolean;
   existsAssets(filepath: string): boolean;

@@ -18,6 +18,7 @@ Modified by Sergei Kazakov on 31.10.24.
 
 #import <Foundation/Foundation.h>
 #import <Photos/Photos.h>
+#import <UIKit/UIKit.h>
 #import "RNFSTurboDownloader.h"
 #import "RNFSTurboUploader.h"
 #import "RNFSTurboPlatformHelper.h"
@@ -26,29 +27,54 @@ namespace cmpayc::rnfsturbo {
 
 RNFSTurboPlatformHelper::RNFSTurboPlatformHelper() {}
 
-void RNFSTurboPlatformHelper::copyAssetsFileIOS(const char* imageUri, const char* destPath, int width, int height, float scale, float compression, const char* resizeMode) {
+static PHAsset* fetchPhotoAsset(NSString *uri, std::string &errorMessage) {
+  NSURL* url = [NSURL URLWithString:uri];
+  if (![url.scheme isEqualToString:@"ph"]) {
+    errorMessage = "Not a photo asset";
+    return nil;
+  }
+  PHFetchResult *phAssetFetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:@[[uri substringFromIndex: 5]] options:nil];
+  if (phAssetFetchResult.count == 0) {
+    errorMessage = "Failed to fetch PHAsset with local identifier with no error message.";
+    return nil;
+  }
+  return [phAssetFetchResult firstObject];
+}
+
+static std::string nsErrorToString(NSError *error, const char* fallback) {
+  NSString *description = [error localizedDescription];
+  return description ? std::string([description UTF8String]) : std::string(fallback);
+}
+
+void RNFSTurboPlatformHelper::copyAssetsFileIOS(
+  const char* imageUri,
+  const char* destPath,
+  int width,
+  int height,
+  float scale,
+  float compression,
+  const char* resizeMode,
+  bool isAsync,
+  RNFSTurboAssetCompleteCallback completeCallback,
+  RNFSTurboAssetErrorCallback errorCallback
+) {
   NSString *nsImageUri = [NSString stringWithUTF8String:imageUri];
   NSString *nsDestPath = [NSString stringWithUTF8String:destPath];
-  NSURL* url = [NSURL URLWithString:nsImageUri];
-  __block NSError *nsError = nil;
-  
-  PHFetchResult *phAssetFetchResult = nil;
-  if (![url.scheme isEqualToString:@"ph"]) {
-    throw "Not a photo asset.";
-  } else {
-    phAssetFetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:@[[nsImageUri substringFromIndex: 5]] options:nil];
-  }
-  if (phAssetFetchResult.count == 0) {
-    throw "Failed to fetch PHAsset with local identifier with no error message.";
+
+  std::string fetchError;
+  PHAsset *phAsset = fetchPhotoAsset(nsImageUri, fetchError);
+  if (!phAsset) {
+    errorCallback(fetchError);
+    return;
   }
 
-  PHAsset *phAsset = [phAssetFetchResult firstObject];
   PHImageRequestOptions *options = [PHImageRequestOptions new];
   options.networkAccessAllowed = YES;
+  options.synchronous = isAsync ? NO : YES;
   options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
-  
+
   CGSize size = CGSizeMake(width, height);
-  
+
   BOOL useMaximumSize = CGSizeEqualToSize(size, CGSizeZero);
   CGSize targetSize;
   if (useMaximumSize) {
@@ -69,73 +95,84 @@ void RNFSTurboPlatformHelper::copyAssetsFileIOS(const char* imageUri, const char
                                             contentMode:contentMode
                                                 options:options
                                           resultHandler:^(UIImage *result, NSDictionary<NSString *, id> *info) {
-    if (result) {
-      NSData *imageData = UIImageJPEGRepresentation(result, compression );
-      [imageData writeToFile:nsDestPath atomically:YES];
+    if ([info[PHImageResultIsDegradedKey] boolValue]) {
+      return;
+    }
+    if (!result) {
+      if ([info[PHImageCancelledKey] boolValue]) {
+        errorCallback("Image request was cancelled");
+      } else {
+        errorCallback(nsErrorToString(info[PHImageErrorKey], "Failed to load image asset"));
+      }
+      return;
+    }
+    void (^writeImage)(void) = ^{
+      NSData *imageData = UIImageJPEGRepresentation(result, compression);
+      if (!imageData) {
+        errorCallback("Failed to encode image as JPEG");
+        return;
+      }
+      NSError *writeError = nil;
+      if (![imageData writeToFile:nsDestPath options:NSDataWritingAtomic error:&writeError]) {
+        errorCallback(nsErrorToString(writeError, "Failed to write image file"));
+        return;
+      }
+      completeCallback();
+    };
+    if (isAsync) {
+      dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), writeImage);
     } else {
-      NSMutableDictionary* details = [NSMutableDictionary dictionary];
-      [details setValue:info[PHImageErrorKey] forKey:NSLocalizedDescriptionKey];
-      NSError *nsError = [NSError errorWithDomain:@"RNFS" code:501 userInfo:details];
-      std::string error = std::string([[nsError localizedDescription] UTF8String]);
-
-      throw error;
+      writeImage();
     }
   }];
-
-  if (nsError) {
-    std::string error = std::string([[nsError localizedDescription] UTF8String]);
-    throw error;
-  }
 }
 
-void RNFSTurboPlatformHelper::copyAssetsVideoIOS(const char* videoUri, const char* destPath) {
+void RNFSTurboPlatformHelper::copyAssetsVideoIOS(
+  const char* videoUri,
+  const char* destPath,
+  bool isAsync,
+  RNFSTurboAssetCompleteCallback completeCallback,
+  RNFSTurboAssetErrorCallback errorCallback
+) {
   NSString *nsVideoUri = [NSString stringWithUTF8String:videoUri];
   NSString *nsDestPath = [NSString stringWithUTF8String:destPath];
 
-  NSURL* url = [NSURL URLWithString:nsVideoUri];
-  __block NSError *nsError = nil;
-
-  PHFetchResult *phAssetFetchResult = nil;
-  
-  if (![url.scheme isEqualToString:@"ph"]) {
-    throw "Not a photo asset";
-  } else {
-    phAssetFetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:@[[nsVideoUri substringFromIndex: 5]] options:nil];
-  }
-  if (phAssetFetchResult.count == 0) {
-    throw "Failed to fetch PHAsset with local identifier with no error message.";
+  std::string fetchError;
+  PHAsset *phAsset = fetchPhotoAsset(nsVideoUri, fetchError);
+  if (!phAsset) {
+    errorCallback(fetchError);
+    return;
   }
 
-  PHAsset *phAsset = [phAssetFetchResult firstObject];
   PHVideoRequestOptions *options = [[PHVideoRequestOptions alloc] init];
   options.networkAccessAllowed = YES;
   options.version = PHVideoRequestOptionsVersionOriginal;
   options.deliveryMode = PHVideoRequestOptionsDeliveryModeAutomatic;
-  
-  dispatch_group_t group = dispatch_group_create();
-  dispatch_group_enter(group);
-  __block NSString *errorMessage = nil;
+
+  dispatch_semaphore_t semaphore = isAsync ? nil : dispatch_semaphore_create(0);
 
   [[PHImageManager defaultManager] requestAVAssetForVideo:phAsset options:options resultHandler:^(AVAsset *asset, AVAudioMix *audioMix, NSDictionary *info) {
     if ([asset isKindOfClass:[AVURLAsset class]]) {
       NSURL *url = [(AVURLAsset *)asset URL];
       NSURL *destinationUrl = [NSURL fileURLWithPath:nsDestPath relativeToURL:nil];
-      [[NSFileManager defaultManager] copyItemAtURL:url toURL:destinationUrl error:&nsError];
+      NSError *copyError = nil;
+      if ([[NSFileManager defaultManager] copyItemAtURL:url toURL:destinationUrl error:&copyError]) {
+        completeCallback();
+      } else {
+        errorCallback(nsErrorToString(copyError, "Failed to copy video asset"));
+      }
     } else if (asset == nil) {
-      NSError *requestError = info[PHImageErrorKey];
-      errorMessage = requestError ? [requestError localizedDescription] : @"Failed to load video asset";
+      errorCallback(nsErrorToString(info[PHImageErrorKey], "Failed to load video asset"));
     } else {
-      errorMessage = @"Unsupported video asset type (e.g. slow-motion video)";
+      errorCallback("Unsupported video asset type (e.g. slow-motion video)");
     }
-    dispatch_group_leave(group);
+    if (semaphore) {
+      dispatch_semaphore_signal(semaphore);
+    }
   }];
-  dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
 
-  if (nsError) {
-    errorMessage = [nsError localizedDescription];
-  }
-  if (errorMessage) {
-    throw std::runtime_error([errorMessage UTF8String] ?: "Failed to copy video asset");
+  if (semaphore) {
+    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
   }
 }
 
