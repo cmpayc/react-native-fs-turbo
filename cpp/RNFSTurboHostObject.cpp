@@ -125,71 +125,56 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           isNewFormat = arguments[1].asBool();
         }
         
-        struct dirent *dent = nullptr;
-        struct stat t_stat;
-        int len{0};
-        DIR *dir = nullptr;
         std::vector<ReadDirItem> assetsDirItems;
+        std::vector<std::string> names;
         
         if (isAndroidAssets) {
 #ifdef __ANDROID__
           try {
             assetsDirItems = platformHelper->readDirAssets(dirPath.c_str());
-            len = assetsDirItems.size();
           } catch (const char *error_message) {
             throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", dirPath.c_str(), propName.c_str(), error_message));
           }
 #endif
         } else {
-          dir = opendir(dirPath.c_str());
+          DIR *dir = opendir(dirPath.c_str());
           if (dir == NULL){
             throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", dirPath.c_str(), propName.c_str(), strerror(errno)));
           }
-          
+          // A single pass: entries added or removed while the folder is listed can neither overflow the
+          // result nor leave holes in it, and the folder is closed before any JS value is created
+          struct dirent *dent = nullptr;
           while ((dent = readdir(dir)) != NULL){
             if (std::strcmp(dent->d_name, ".") != 0 && std::strcmp(dent->d_name, "..") != 0) {
-              len++;
+              names.emplace_back(dent->d_name);
             }
           }
-          if (len < 1) {
-            closedir(dir);
-            jsi::Array arr = jsi::Array(runtime, 0);
-            return arr;
-          }
-          rewinddir(dir);
+          closedir(dir);
         }
-        std::vector<ReadDirItem>::iterator assetsDirItemsIt = assetsDirItems.begin();
         
-        jsi::Array arr = jsi::Array(runtime, len);
-        len = 0;
-        while (true) {
-          if (isAndroidAssets) {
-            if (assetsDirItemsIt == end(assetsDirItems)) {
-              break;
-            }
-          } else {
-            dent = readdir(dir);
-            if (dent == NULL) {
-              break;
-            }
-            if (std::strcmp(dent->d_name, ".") == 0 || std::strcmp(dent->d_name, "..") == 0) {
-              continue;
-            }
+        std::vector<jsi::Value> items;
+        if (propName == "readdir") {
+          items.reserve(names.size());
+          for (const std::string& name : names) {
+            items.emplace_back(jsi::String::createFromUtf8(runtime, name));
           }
-          if (propName == "readdir") {
-            arr.setValueAtIndex(
-              runtime,
-              len,
-              jsi::String::createFromUtf8(runtime, dent->d_name)
-            );
-          } else {
-            std::string absolutePath(dirPath);
+        } else {
+          size_t itemsCount = isAndroidAssets ? assetsDirItems.size() : names.size();
+          items.reserve(itemsCount);
+          for (size_t i = 0; i < itemsCount; i++) {
+            std::string absolutePath;
+            std::string name;
+            struct stat t_stat{};
             if (isAndroidAssets) {
-              absolutePath = assetsDirItemsIt->path;
+              absolutePath = assetsDirItems[i].path;
+              name = assetsDirItems[i].name;
             } else {
-              absolutePath.append("/");
-              absolutePath.append(dent->d_name);
-              stat(absolutePath.c_str(), &t_stat);
+              name = names[i];
+              absolutePath = dirPath + "/" + name;
+              // stat follows links: a dangling link is described by lstat, an entry removed since the listing is skipped
+              if (stat(absolutePath.c_str(), &t_stat) != 0 && lstat(absolutePath.c_str(), &t_stat) != 0) {
+                continue;
+              }
             }
             jsi::Object obj = jsi::Object(runtime);
             obj.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, absolutePath));
@@ -206,7 +191,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
             obj.setProperty(
               runtime,
               "size",
-              jsi::Value(static_cast<double>(isAndroidAssets ? assetsDirItemsIt->size : t_stat.st_size))
+              jsi::Value(static_cast<double>(isAndroidAssets ? assetsDirItems[i].size : t_stat.st_size))
             );
             if (isNewFormat) {
               obj.setProperty(
@@ -215,12 +200,8 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
                 jsi::Value(static_cast<int>(isAndroidAssets ? 0 : t_stat.st_mode))
               );
             }
-            obj.setProperty(
-              runtime,
-              "name",
-              jsi::String::createFromUtf8(runtime, isAndroidAssets ? assetsDirItemsIt->name : dent->d_name)
-            );
-            bool isDirectory = isAndroidAssets ? assetsDirItemsIt->isDirectory : S_ISDIR(t_stat.st_mode);
+            obj.setProperty(runtime, "name", jsi::String::createFromUtf8(runtime, name));
+            bool isDirectory = isAndroidAssets ? assetsDirItems[i].isDirectory : S_ISDIR(t_stat.st_mode);
             if (isNewFormat) {
               obj.setProperty(runtime, "isDirectory", jsi::Value(isDirectory));
             } else {
@@ -233,7 +214,7 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
                 }
               ));
             }
-            bool isFile = isAndroidAssets ? !assetsDirItemsIt->isDirectory : S_ISREG(t_stat.st_mode);
+            bool isFile = isAndroidAssets ? !assetsDirItems[i].isDirectory : S_ISREG(t_stat.st_mode);
             if (isNewFormat) {
               obj.setProperty(runtime, "isFile", jsi::Value(isFile));
             } else {
@@ -246,18 +227,14 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
                 }
               ));
             }
-            
-            arr.setValueAtIndex(runtime, len, std::move(obj));
+            items.emplace_back(std::move(obj));
           }
-          if (isAndroidAssets) {
-            assetsDirItemsIt++;
-          }
-          len++;
         }
-        if (propName != "readDirAssets") {
-          closedir(dir);
+        
+        jsi::Array arr = jsi::Array(runtime, items.size());
+        for (size_t i = 0; i < items.size(); i++) {
+          arr.setValueAtIndex(runtime, i, std::move(items[i]));
         }
-
         return arr;
       }
     );
@@ -905,6 +882,13 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsFileIOS", "Fourth argument ('height') has to be of type number"));
         }
 
+        bool isAsync = count > 8 &&
+          arguments[7].isObject() && arguments[7].asObject(runtime).isFunction(runtime) &&
+          arguments[8].isObject() && arguments[8].asObject(runtime).isFunction(runtime);
+        if (!isAsync && ((count > 7 && !arguments[7].isUndefined()) || (count > 8 && !arguments[8].isUndefined()))) [[unlikely]] {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsFileIOS", "Complete and error callbacks have to be functions"));
+        }
+
         std::string imageUri = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
 
@@ -922,27 +906,58 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
         if (count > 6 && arguments[6].isString()) {
           resizeMode = arguments[6].asString(runtime).utf8(runtime);
         }
-        
+
         if (imageUri.rfind("ph://", 0) == std::string::npos) {
           try {
             fs::copy(imageUri.c_str(), destPath.c_str());
           } catch (fs::filesystem_error& e) {
             throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsFileIOS", e.what()));
           }
+          if (isAsync) {
+            arguments[7].asObject(runtime).asFunction(runtime).call(runtime, jsi::String::createFromUtf8(runtime, destPath));
+            return jsi::Value::undefined();
+          }
           return jsi::String::createFromUtf8(runtime, destPath);
         }
 
-        try {
-          platformHelper->copyAssetsFileIOS(imageUri.c_str(), destPath.c_str(), width, height, scale, compression, resizeMode.c_str());
-        } catch (const char* error_message) {
-          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", imageUri.c_str(), "copyAssetsFileIOS", error_message));
+        if (!isAsync) {
+          std::optional<std::string> error;
+          platformHelper->copyAssetsFileIOS(
+            imageUri.c_str(), destPath.c_str(), width, height, scale, compression, resizeMode.c_str(), false,
+            []() -> void {},
+            [&error](std::string errorMessage) -> void { error = std::move(errorMessage); }
+          );
+          if (error) {
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", imageUri.c_str(), "copyAssetsFileIOS", error->c_str()));
+          }
+          return jsi::String::createFromUtf8(runtime, destPath);
         }
-        
-        return jsi::String::createFromUtf8(runtime, destPath);
+
+        std::shared_ptr<jsi::Function> completeFunc = std::make_shared<jsi::Function>(
+          arguments[7].asObject(runtime).asFunction(runtime)
+        );
+        std::shared_ptr<jsi::Function> errorFunc = std::make_shared<jsi::Function>(
+          arguments[8].asObject(runtime).asFunction(runtime)
+        );
+
+        RNFSTurboAssetCompleteCallback completeCallback = [&runtime, completeFunc, destPath, this]() -> void {
+          _jsInvoker->invokeAsync([&runtime, completeFunc, destPath]() {
+            completeFunc->call(runtime, jsi::String::createFromUtf8(runtime, destPath));
+          });
+        };
+        RNFSTurboAssetErrorCallback errorCallback = [&runtime, errorFunc, imageUri, this](std::string errorMessage) -> void {
+          std::string message = RNFSTurboLogger::sprintf("%s: %s: %s", imageUri.c_str(), "copyAssetsFileIOS", errorMessage.c_str());
+          _jsInvoker->invokeAsync([&runtime, errorFunc, message = std::move(message)]() {
+            errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, message));
+          });
+        };
+
+        platformHelper->copyAssetsFileIOS(imageUri.c_str(), destPath.c_str(), width, height, scale, compression, resizeMode.c_str(), true, completeCallback, errorCallback);
+
+        return jsi::Value::undefined();
 #else
         throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsFileIOS", "Command only for iOS"));
 #endif
-        return jsi::Value::undefined();
       }
     );
   }
@@ -959,6 +974,13 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsVideoIOS", "Second argument ('destPath') has to be of type string"));
         }
 
+        bool isAsync = count > 3 &&
+          arguments[2].isObject() && arguments[2].asObject(runtime).isFunction(runtime) &&
+          arguments[3].isObject() && arguments[3].asObject(runtime).isFunction(runtime);
+        if (!isAsync && ((count > 2 && !arguments[2].isUndefined()) || (count > 3 && !arguments[3].isUndefined()))) [[unlikely]] {
+          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsVideoIOS", "Complete and error callbacks have to be functions"));
+        }
+
         std::string videoUri = cleanPath(arguments[0].asString(runtime).utf8(runtime));
         std::string destPath = cleanPath(arguments[1].asString(runtime).utf8(runtime));
 
@@ -968,22 +990,51 @@ jsi::Value RNFSTurboHostObject::get(jsi::Runtime& runtime, const jsi::PropNameID
           } catch (fs::filesystem_error& e) {
             throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsVideoIOS", e.what()));
           }
+          if (isAsync) {
+            arguments[2].asObject(runtime).asFunction(runtime).call(runtime, jsi::String::createFromUtf8(runtime, destPath));
+            return jsi::Value::undefined();
+          }
           return jsi::String::createFromUtf8(runtime, destPath);
         }
 
-        try {
-          platformHelper->copyAssetsVideoIOS(videoUri.c_str(), destPath.c_str());
-        } catch (const char* error_message) {
-          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", videoUri.c_str(), "copyAssetsVideoIOS", error_message));
-        } catch (const std::exception& e) {
-          throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", videoUri.c_str(), "copyAssetsVideoIOS", e.what()));
+        if (!isAsync) {
+          std::optional<std::string> error;
+          platformHelper->copyAssetsVideoIOS(
+            videoUri.c_str(), destPath.c_str(), false,
+            []() -> void {},
+            [&error](std::string errorMessage) -> void { error = std::move(errorMessage); }
+          );
+          if (error) {
+            throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s: %s", videoUri.c_str(), "copyAssetsVideoIOS", error->c_str()));
+          }
+          return jsi::String::createFromUtf8(runtime, destPath);
         }
 
-        return jsi::String::createFromUtf8(runtime, destPath);
+        std::shared_ptr<jsi::Function> completeFunc = std::make_shared<jsi::Function>(
+          arguments[2].asObject(runtime).asFunction(runtime)
+        );
+        std::shared_ptr<jsi::Function> errorFunc = std::make_shared<jsi::Function>(
+          arguments[3].asObject(runtime).asFunction(runtime)
+        );
+
+        RNFSTurboAssetCompleteCallback completeCallback = [&runtime, completeFunc, destPath, this]() -> void {
+          _jsInvoker->invokeAsync([&runtime, completeFunc, destPath]() {
+            completeFunc->call(runtime, jsi::String::createFromUtf8(runtime, destPath));
+          });
+        };
+        RNFSTurboAssetErrorCallback errorCallback = [&runtime, errorFunc, videoUri, this](std::string errorMessage) -> void {
+          std::string message = RNFSTurboLogger::sprintf("%s: %s: %s", videoUri.c_str(), "copyAssetsVideoIOS", errorMessage.c_str());
+          _jsInvoker->invokeAsync([&runtime, errorFunc, message = std::move(message)]() {
+            errorFunc->call(runtime, jsi::String::createFromUtf8(runtime, message));
+          });
+        };
+
+        platformHelper->copyAssetsVideoIOS(videoUri.c_str(), destPath.c_str(), true, completeCallback, errorCallback);
+
+        return jsi::Value::undefined();
 #else
         throw jsi::JSError(runtime, RNFSTurboLogger::sprintf("%s: %s", "copyAssetsVideoIOS", "Command only for iOS"));
 #endif
-        return jsi::Value::undefined();
       }
     );
   }

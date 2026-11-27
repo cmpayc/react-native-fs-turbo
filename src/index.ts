@@ -29,6 +29,7 @@ export type {
   OverloadedStatResult,
   OverloadedReadDirItem,
   OverloadedReadResult,
+  OverloadedCopyAssetsResult,
   OverloadedDownloadResult,
   OverloadedUploadResult,
   OverloadedScanResult,

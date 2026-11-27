@@ -25,7 +25,6 @@ import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.StatFs;
-import android.util.SparseArray;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -37,13 +36,15 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RNFSTurboPlatformHelper {
 
   public static String tag = "RNFSTurboPlatformHelper";
 
-  public static SparseArray<RNFSTurboDownloader> downloaders = new SparseArray<>();
-  public static SparseArray<RNFSTurboUploader> uploaders = new SparseArray<>();
+  // Written from the JS thread, read and cleared from the download/upload threads and the UI thread
+  public static final Map<Integer, RNFSTurboDownloader> downloaders = new ConcurrentHashMap<>();
+  public static final Map<Integer, RNFSTurboUploader> uploaders = new ConcurrentHashMap<>();
 
   public static native void downloadCompleteCallback(int jobId, int statusCode, double bytesWritten);
 
@@ -228,14 +229,13 @@ public class RNFSTurboPlatformHelper {
 
       params.onTaskCompleted = new RNFSTurboDownloadParams.OnTaskCompleted() {
         public void onTaskCompleted(RNFSTurboDownloadResult res) {
-          RNFSTurboDownloader downloader = downloaders.get(jobId);
-          if (downloader != null) {
-            if (res.exception == null) {
-              downloadCompleteCallback(jobId, res.statusCode, (double)res.bytesWritten);
-            } else {
-              downloadErrorCallback(jobId, errorMessage(res.exception));
-            }
-            downloaders.remove(jobId);
+          if (downloaders.remove(jobId) == null) {
+            return;
+          }
+          if (res.exception == null) {
+            downloadCompleteCallback(jobId, res.statusCode, (double)res.bytesWritten);
+          } else {
+            downloadErrorCallback(jobId, errorMessage(res.exception));
           }
         }
       };
@@ -265,11 +265,12 @@ public class RNFSTurboPlatformHelper {
 
       RNFSTurboDownloader downloader = new RNFSTurboDownloader();
 
-      downloader.execute(params);
-
+      // Registered before it starts: a download that ends at once (no network) must find itself in the map
       downloaders.put(jobId, downloader);
+      downloader.execute(params);
     } catch (Exception ex) {
       ex.printStackTrace();
+      downloaders.remove(jobId);
       downloadErrorCallback(jobId, errorMessage(ex));
     }
   }
@@ -338,11 +339,11 @@ public class RNFSTurboPlatformHelper {
 
       RNFSTurboUploader uploader = new RNFSTurboUploader();
 
-      uploader.execute(params);
-
       uploaders.put(jobId, uploader);
+      uploader.execute(params);
     } catch (Exception ex) {
       ex.printStackTrace();
+      uploaders.remove(jobId);
       uploadErrorCallback(jobId, errorMessage(ex));
     }
   }
