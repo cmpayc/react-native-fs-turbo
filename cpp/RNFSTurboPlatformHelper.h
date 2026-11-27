@@ -14,6 +14,10 @@
 #include <string>
 #include <thread>
 
+#ifdef __OBJC__
+#import <Foundation/Foundation.h>
+#endif
+
 namespace cmpayc::rnfsturbo {
 
 typedef std::function<void (int jobId, int statusCode, double bytesWritten)> RNFSTurboCompleteDownloadCallback;
@@ -33,6 +37,10 @@ typedef std::function<void (int jobId)> RNFSTurboBeginUploadCallback;
 typedef std::function<void (int jobId, double totalBytesExpectedToSend, double totalBytesSent)> RNFSTurboProgressUploadCallback;
 
 typedef std::function<void (int jobId, std::string path)> RNFSTurboScanCallback;
+
+typedef std::function<void ()> RNFSTurboAssetCompleteCallback;
+
+typedef std::function<void (std::string errorMessage)> RNFSTurboAssetErrorCallback;
 
 struct ReadDirItem {
   std::string name;
@@ -100,9 +108,26 @@ public:
 
   bool existsAssetsOrRes(const char* filePath, bool isRes);
 
-  void copyAssetsFileIOS(const char* imageUri, const char* destPath, int width, int height, float scale, float compression, const char* resizeMode);
+  void copyAssetsFileIOS(
+    const char* imageUri,
+    const char* destPath,
+    int width,
+    int height,
+    float scale,
+    float compression,
+    const char* resizeMode,
+    bool isAsync,
+    RNFSTurboAssetCompleteCallback completeCallback,
+    RNFSTurboAssetErrorCallback errorCallback
+  );
 
-  void copyAssetsVideoIOS(const char* videoUri, const char* destPath);
+  void copyAssetsVideoIOS(
+    const char* videoUri,
+    const char* destPath,
+    bool isAsync,
+    RNFSTurboAssetCompleteCallback completeCallback,
+    RNFSTurboAssetErrorCallback errorCallback
+  );
 
   void downloadFile(
     int jobId,
