@@ -33,7 +33,9 @@
     "ios/PrivacyInfo.xcprivacy",
     "src",
     "react-native.config.js",
-    "RNFSTurbo.podspec"
+    "RNFSTurbo.podspec",
+    "Package.swift",
+    "spm/autolinking-plugin.js"
   ],
   "keywords": [
     "react",
@@ -71,6 +73,10 @@
     "android": {
       "javaPackageName": "com.cmpayc.rnfsturbo"
     }
+  },
+  "swiftpmConfig": {
+    "name": "RNFSTurbo",
+    "autolinkingPlugin": "./spm/autolinking-plugin.js"
   },
   "devDependencies": {
     "@types/node": "^22",
