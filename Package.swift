@@ -1,6 +1,10 @@
 // swift-tools-version: 6.0
 
+import Foundation
 import PackageDescription
+
+let configHeader = Context.packageDirectory + "/ios/RNFSTurboConfig.h"
+let generatedConfigDir = URL(fileURLWithPath: Context.packageDirectory).deletingLastPathComponent().path
 
 let package = Package(
     name: "RNFSTurbo",
@@ -21,6 +25,7 @@ let package = Package(
                 .product(name: "ReactNativeDependenciesHeaders", package: "ReactNative"),
                 .product(name: "ReactAppHeaders", package: "React-GeneratedCode"),
             ],
+            path: ".",
             sources: [
                 "cpp",
                 "ios/RNFSTurboDownloader.mm",
@@ -37,7 +42,7 @@ let package = Package(
                 .define("USE_ARM_AES"),
                 .define("DEBUG", .when(configuration: .debug)),
                 .define("NDEBUG", .when(configuration: .release)),
-                .unsafeFlags(["-x", "objective-c++"]),
+                .unsafeFlags(["-x", "objective-c++", "-include", configHeader, "-I", generatedConfigDir]),
             ],
             linkerSettings: [
                 .linkedFramework("Foundation"),

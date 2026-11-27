@@ -2,6 +2,7 @@
 
 * This library repeats all the methods of the original [react-native-fs](https://github.com/itinance/react-native-fs) but all the code is executed synchronously in C++ files via JSI (and JNI) and written using TypeScript.
 * New methods for working with files have also been added, including AES256 encryption (disabled by default)
+* Supports iOS installation via both CocoaPods and **Swift Package Manager** (React Native 0.88+, see [SwiftPM installation](#ios-swift-package-manager-react-native-088))
 
 > [!IMPORTANT]
 > `react-native-fs-turbo` is a pure C++ TurboModule, and **requires the new architecture to be enabled**. (react-native 0.75+)
@@ -80,6 +81,42 @@ yarn add react-native-fs-turbo
 cd ios && pod install
 ```
 
+### iOS: Swift Package Manager (React Native 0.88+)
+
+Starting with React Native **0.88**, iOS apps can use Swift Package Manager (SwiftPM) instead of CocoaPods. `react-native-fs-turbo` ships its own `Package.swift` and a SwiftPM autolinking plugin, so `npx react-native spm` adds it to your app automatically. You don't need to scaffold anything or run `pod install`.
+
+1. Install the library:
+
+```sh
+yarn add react-native-fs-turbo
+```
+
+2. Set up SwiftPM in your app. Run this from the app root:
+
+```sh
+# New app still on CocoaPods: migrate it to SwiftPM
+npx react-native spm add --deintegrate
+
+# App that already uses SwiftPM: refresh autolinking after adding the library
+npx react-native spm update
+```
+
+This command adds React Native and all autolinked libraries, including `RNFSTurbo`, as local Swift packages in your `.xcodeproj`. Run `npx react-native spm update` again every time you install or upgrade `react-native-fs-turbo`, the same way you'd run `pod install`.
+
+3. Build the app as usual:
+
+```sh
+npx react-native run-ios
+```
+
+Or open the `.xcodeproj` in Xcode and build from there.
+
+> [!TIP]
+> If Xcode still uses an old version of the package after `npx react-native spm update` (for example after upgrading `react-native-fs-turbo`), reset the package cache once with **File → Packages → Reset Package Caches**, then rebuild.
+
+> [!NOTE]
+> With SwiftPM, AES256 encryption is enabled differently than with CocoaPods. See [iOS (SwiftPM)](#ios-swiftpm).
+
 ### Android
 
 #### Proguard
@@ -92,7 +129,7 @@ If you're using Proguard, make sure to add the following rule at proguard-rules.
 ### AES256 Encryption (disabled by default)
 To enable AES256 encryption methods, you need to add encryption flags to Android and iOS builds.
 
-#### iOS
+#### iOS (CocoaPods)
 Add a new strings to `ios/Podfile` file to `post_install` section
 
 ```ruby
@@ -107,6 +144,31 @@ Add a new strings to `ios/Podfile` file to `post_install` section
     end
   end
 ```
+
+#### iOS (SwiftPM)
+Add the `rnFsTurbo` option to your app's `package.json`:
+
+```json
+{
+  "name": "my-app",
+  ...
+  "rnFsTurbo": {
+    "useEncryption": true
+  }
+}
+```
+
+Then refresh SwiftPM autolinking (this is the SwiftPM counterpart of `pod install`) and rebuild:
+
+```sh
+npx react-native spm update
+```
+
+Do the same after you turn encryption off. Changing the option doesn't need a package cache reset or a clean build.
+
+The `RNFSTURBO_USE_ENCRYPTION=1` (or `0`) environment variable overrides the `package.json` option when running `npx react-native spm update`, for example on CI.
+
+In a monorepo, put the option in the `package.json` of the React Native app (the folder that contains `ios/`), not in the workspace root. The setting is stored per app, so apps that share one hoisted copy of `react-native-fs-turbo` can use different settings.
 
 #### Android
 Add a new string to `android/gradle.properties` file
