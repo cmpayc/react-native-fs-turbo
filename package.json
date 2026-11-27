@@ -32,7 +32,8 @@
     "ios/PrivacyInfo.xcprivacy",
     "src",
     "react-native.config.js",
-    "RNFSTurbo.podspec"
+    "RNFSTurbo.podspec",
+    "Package.swift"
   ],
   "keywords": [
     "react",
@@ -70,6 +71,9 @@
     "android": {
       "javaPackageName": "com.cmpayc.rnfsturbo"
     }
+  },
+  "swiftpmConfig": {
+    "name": "RNFSTurbo"
   },
   "devDependencies": {
     "@types/node": "^22",
