@@ -83,11 +83,7 @@ cd ios && pod install
 ### Android
 
 #### Proguard
-If you're using Proguard, make sure to add the following rule at proguard-rules.pro:
-
-```
--keep class com.cmpayc.rnfsturbo.** { *; }
-```
+The library ships its ProGuard/R8 rules (`consumerProguardFiles`), so release builds need no extra rule.
 
 ### AES256 Encryption (disabled by default)
 To enable AES256 encryption methods, you need to add encryption flags to Android and iOS builds.
